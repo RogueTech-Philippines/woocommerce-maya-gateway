@@ -29,13 +29,19 @@ use Automattic\WooCommerce\Utilities\FeaturesUtil;
 use TaniKyuun\MayaGateway\Plugin;
 
 /**
- * Declare HPOS (High-Performance Order Storage) compatibility.
+ * Declare WooCommerce feature compatibility.
+ *
+ * - `custom_order_tables` (HPOS): we read/write order meta via `WC_Order` only
+ *   — no direct `posts`/`postmeta` SQL — so the gateway is HPOS-safe.
+ * - `cart_checkout_blocks`: enables the block-based Cart and Checkout entry
+ *   that {@see \TaniKyuun\MayaGateway\Blocks\MayaBlocksPaymentMethod} provides.
  */
 add_action(
     'before_woocommerce_init',
     static function (): void {
         if (class_exists(FeaturesUtil::class)) {
             FeaturesUtil::declare_compatibility('custom_order_tables', WC_MAYA_PLUGIN_FILE, true);
+            FeaturesUtil::declare_compatibility('cart_checkout_blocks', WC_MAYA_PLUGIN_FILE, true);
         }
     },
 );

@@ -350,6 +350,8 @@ Expected: `Tests: 163 passed (549 assertions)`.
 - [../REBUILD_PLAN.md](../REBUILD_PLAN.md) — master plan; Phase 7 lands
   WooCommerce Blocks support (the block-based checkout's payment method
   registration).
+- [PHASE7-TOUR.md](PHASE7-TOUR.md) — next phase: WC Blocks integration
+  for the block-based Cart and Checkout.
 - [../architecture.md](../architecture.md) — updated file map, new
   "Refund" decision-tree diagram, expanded "which file do I open?" rows.
 - [PHASE5-TOUR.md](PHASE5-TOUR.md) — manual capture, the prerequisite for

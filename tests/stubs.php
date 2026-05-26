@@ -71,6 +71,96 @@ if (! class_exists('WC_Order_Item_Product')) {
     }
 }
 
+if (! class_exists('Automattic\\WooCommerce\\Blocks\\Payments\\PaymentMethodRegistry')) {
+    /**
+     * Skeleton PaymentMethodRegistry — the real class lives in WC core and
+     * isn't loaded for unit tests. We only need an `instanceof`-able shape
+     * with a `register()` method so MayaBlocksPaymentMethod compiles + tests
+     * can assert it was called.
+     */
+    class FakePaymentMethodRegistry
+    { // phpcs:ignore
+
+        /** @var array<int,object> */
+        public array $registered = [];
+
+        public function register(object $payment_method): void
+        {
+            $this->registered[] = $payment_method;
+        }
+    }
+
+    class_alias(
+        FakePaymentMethodRegistry::class,
+        'Automattic\\WooCommerce\\Blocks\\Payments\\PaymentMethodRegistry',
+    );
+}
+
+if (! interface_exists('Automattic\\WooCommerce\\Blocks\\Payments\\PaymentMethodTypeInterface')) {
+    interface FakePaymentMethodTypeInterface
+    { // phpcs:ignore
+
+        public function get_name();
+    }
+
+    class_alias(
+        FakePaymentMethodTypeInterface::class,
+        'Automattic\\WooCommerce\\Blocks\\Payments\\PaymentMethodTypeInterface',
+    );
+}
+
+if (! class_exists('Automattic\\WooCommerce\\Blocks\\Payments\\Integrations\\AbstractPaymentMethodType')) {
+    /**
+     * Skeleton AbstractPaymentMethodType — minimal shape from WC's real
+     * class. Concrete plugin subclasses can extend and override; tests
+     * cover those overrides directly without the WC Blocks package.
+     */
+    abstract class FakeAbstractPaymentMethodType implements \Automattic\WooCommerce\Blocks\Payments\PaymentMethodTypeInterface
+    { // phpcs:ignore
+
+        /** @var string */
+        protected $name = '';
+
+        /** @var array<string,mixed> */
+        protected $settings = [];
+
+        public function get_name()
+        {
+            return $this->name;
+        }
+
+        public function is_active()
+        {
+            return true;
+        }
+
+        public function get_payment_method_script_handles()
+        {
+            return [];
+        }
+
+        public function get_payment_method_data()
+        {
+            return [];
+        }
+
+        public function get_supported_features()
+        {
+            return [ 'products' ];
+        }
+
+        protected function get_setting($name, $default = '')
+        {
+            return $this->settings[ $name ] ?? $default;
+        }
+    }
+
+    class_alias(
+        FakeAbstractPaymentMethodType::class,
+        'Automattic\\WooCommerce\\Blocks\\Payments\\Integrations\\AbstractPaymentMethodType',
+    );
+}
+
 if (! class_exists('WC_Payment_Gateway')) {
     /**
      * Skeleton WC_Payment_Gateway so the gateway class can be loaded.

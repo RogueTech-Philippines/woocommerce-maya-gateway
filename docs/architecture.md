@@ -26,6 +26,8 @@ src/
 │       ├── Checkouts.php            # POST /checkout/v1/checkouts → CheckoutSession
 │       ├── Webhooks.php             # GET/POST/DELETE /checkout/v1/webhooks → WebhookRecord(s)
 │       └── Payments.php             # /payments/v1/payment-rrns + capture/void/refund/get_refunds
+├── Blocks/
+│   └── MayaBlocksPaymentMethod.php  # AbstractPaymentMethodType — exposes the gateway to the block-based Cart/Checkout
 ├── Gateway/
 │   ├── MayaGateway.php              # WC_Payment_Gateway subclass; delegates to Admin/* and Settings/*
 │   ├── PaymentProcessor.php         # builds checkout payload + Checkouts::create + persists meta
@@ -86,6 +88,8 @@ src/
 | Change capture validation rules | [src/Gateway/CaptureProcessor.php](../src/Gateway/CaptureProcessor.php) (`capture()` validation + dispatch) |
 | Tweak the capture-panel HTML | [templates/admin/capture-panel.php](../templates/admin/capture-panel.php) (`include`-rendered template) |
 | Change void-vs-refund decision or multi-capture split | [src/Gateway/RefundProcessor.php](../src/Gateway/RefundProcessor.php) — `plan_capture_actions()` is pure-static and exhaustively unit-tested |
+| Change how the gateway shows up in the block-based Cart/Checkout | [src/Blocks/MayaBlocksPaymentMethod.php](../src/Blocks/MayaBlocksPaymentMethod.php) (PHP side — title/description/icon/supports) and [assets/js/maya-blocks.js](../assets/js/maya-blocks.js) (frontend `registerPaymentMethod` call) |
+| Add an icon to the block payment method | Hook the `wc_maya_blocks_icon_url` filter (string URL) — read in `MayaBlocksPaymentMethod::resolve_icon_url()` |
 
 ## Service-registration convention
 
@@ -296,6 +300,69 @@ Manual-capture order (auth type normal/final/preauthorization)
 `plan_capture_actions()` and `remaining_refundable()` are public static so
 unit tests can pin every branch of the algorithm without mocking Maya.
 
+## Block-based Cart and Checkout (Phase 7)
+
+WooCommerce ships two checkout experiences:
+
+- **Classic checkout** (shortcode `[woocommerce_checkout]`) — server-rendered,
+  what every legacy theme uses. The `WC_Payment_Gateway` class drives it.
+  Maya already worked here after Phase 4.
+- **Block-based Cart / Checkout** (introduced with WooCommerce Blocks) —
+  React-rendered, what new themes default to. Each payment gateway has to
+  ship a separate "integration" class + a JS bundle that calls
+  `wc.wcBlocksRegistry.registerPaymentMethod`.
+
+`Blocks/MayaBlocksPaymentMethod` is that integration:
+
+```text
+Plugin::init()
+    └── MayaBlocksPaymentMethod::register()
+        └── add_action('woocommerce_blocks_payment_method_type_registration', …)
+            └── WC Blocks calls register_payment_method(PaymentMethodRegistry $r)
+                └── $r->register(new MayaBlocksPaymentMethod())
+
+When the block renders:
+    ├── ::initialize()                 reads woocommerce_maya_checkout_settings
+    ├── ::is_active()                  → enabled === 'yes'
+    ├── ::get_payment_method_script_handles()
+    │       wp_register_script('wc-maya-blocks', assets/js/maya-blocks.js,
+    │                          [wc-blocks-registry, wp-element, wp-html-entities, wp-i18n])
+    │       wp_set_script_translations(...)
+    └── ::get_payment_method_data()    → {title, description, icon, supports}
+            (localized as wc.wcSettings)
+
+In the browser:
+    └── assets/js/maya-blocks.js
+        ├── reads wc.wcSettings.getPaymentMethodData('maya_checkout')
+        └── wc.wcBlocksRegistry.registerPaymentMethod({
+                name: 'maya_checkout',
+                label: <PaymentMethodLabel text=title icon=icon />,
+                content / edit: <div>{description}</div>,
+                canMakePayment: () => true,
+                supports: { features: settings.supports },
+            })
+```
+
+Maya is **hosted checkout** — the customer enters card / wallet details
+on a Maya-hosted page after "Place order", so the block content is just a
+description, no input fields. `process_payment()` on the classic
+`MayaGateway` still owns the actual session-creation logic; the block's
+`canMakePayment` always returns true and the rest of the flow is
+identical to the classic checkout.
+
+`build_payment_method_data()` and `is_enabled()` are public static so the
+data-shape contract and activation rule can be pinned by unit tests
+without booting WooCommerce.
+
+Compatibility is declared in the main plugin file alongside HPOS:
+
+```php
+FeaturesUtil::declare_compatibility('cart_checkout_blocks', WC_MAYA_PLUGIN_FILE, true);
+```
+
+Without that declaration, WooCommerce hides the gateway from the block
+checkout even if the integration class is registered.
+
 ## Adding an endpoint
 
 The pattern is set by [src/Api/Endpoints/Checkouts.php](../src/Api/Endpoints/Checkouts.php) and
@@ -334,6 +401,8 @@ tests/Unit/
 │   ├── CheckoutsTest.php
 │   ├── WebhooksTest.php
 │   └── PaymentsTest.php
+├── Blocks/
+│   └── MayaBlocksPaymentMethodTest.php
 ├── Gateway/
 │   ├── PaymentProcessorTest.php
 │   ├── CaptureProcessorTest.php

@@ -12,7 +12,7 @@ The current plugin is a clean scaffold. The old plugin (`wc-maya-payment-gateway
 | 4 | Payment processing | ✅ Done (2026-05-26) | [rebuild-overview/PHASE4-TOUR.md](rebuild-overview/PHASE4-TOUR.md) |
 | 5 | Manual capture | ✅ Done (2026-05-26) | [rebuild-overview/PHASE5-TOUR.md](rebuild-overview/PHASE5-TOUR.md) |
 | 6 | Refund + void | ✅ Done (2026-05-26) | [rebuild-overview/PHASE6-TOUR.md](rebuild-overview/PHASE6-TOUR.md) |
-| 7 | WC Blocks support | ⏳ Pending | — |
+| 7 | WC Blocks support | ✅ Done (2026-05-26) | [rebuild-overview/PHASE7-TOUR.md](rebuild-overview/PHASE7-TOUR.md) |
 | 8 | Polish + release | ⏳ Pending | — |
 
 ## Per-phase tour-doc convention
@@ -253,7 +253,7 @@ algorithm ported from legacy and exhaustively unit-tested.
 refund single payment, partial refund split across two captures. Full
 walkthrough: [rebuild-overview/PHASE6-TOUR.md](rebuild-overview/PHASE6-TOUR.md).
 
-### Phase 7 — WC Blocks support
+### Phase 7 — WC Blocks support ✅ Done
 
 The classic checkout works after Phase 4; this phase adds Blocks.
 
@@ -263,6 +263,19 @@ The classic checkout works after Phase 4; this phase adds Blocks.
 - Compatibility flag declared in main plugin file via `FeaturesUtil::declare_compatibility('cart_checkout_blocks', ...)`.
 
 **DoD:** A site using the block-based checkout sees Maya as a selectable payment method and the flow completes.
+
+**Delivered:** 182 tests passing (was 163 → +19), 594 assertions, lint
+clean. New `Blocks/MayaBlocksPaymentMethod` extends
+`AbstractPaymentMethodType` and registers via
+`woocommerce_blocks_payment_method_type_registration`; pure-static
+`build_payment_method_data()` and `is_enabled()` helpers keep the data
+shape + activation rule unit-testable without WC core. New
+`assets/js/maya-blocks.js` calls `wc.wcBlocksRegistry.registerPaymentMethod`
+using `wp.element`, `wp.htmlEntities`, and `wp.i18n` — no card / wallet
+UI lives in the block because Maya is hosted-checkout; the customer is
+redirected after "Place order". `cart_checkout_blocks` compatibility is
+declared alongside HPOS in the main plugin file. Full walkthrough:
+[rebuild-overview/PHASE7-TOUR.md](rebuild-overview/PHASE7-TOUR.md).
 
 ### Phase 8 — Polish, observability, release
 

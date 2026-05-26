@@ -17,6 +17,7 @@ use TaniKyuun\MayaGateway\Admin\Ajax\SimulateWebhook;
 use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
 use TaniKyuun\MayaGateway\Admin\OrderActions\CaptureButton;
 use TaniKyuun\MayaGateway\Admin\OrderActions\CapturePanel;
+use TaniKyuun\MayaGateway\Blocks\MayaBlocksPaymentMethod;
 use TaniKyuun\MayaGateway\Gateway\MayaGateway;
 use TaniKyuun\MayaGateway\Gateway\ReturnHandler;
 use TaniKyuun\MayaGateway\Webhook\WebhookHandler;
@@ -47,6 +48,7 @@ class Plugin
         CapturePanel::register();
         WebhookHandler::register();
         ReturnHandler::register();
+        MayaBlocksPaymentMethod::register();
     }
 
     /**
