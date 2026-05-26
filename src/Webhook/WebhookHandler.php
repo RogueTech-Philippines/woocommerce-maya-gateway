@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace TaniKyuun\MayaGateway\Webhook;
 
+use TaniKyuun\MayaGateway\Api\Endpoints\Payments;
+use TaniKyuun\MayaGateway\Api\MayaApiClient;
 use TaniKyuun\MayaGateway\Gateway\MayaGateway;
 use TaniKyuun\MayaGateway\Settings\SettingsHelper;
 use TaniKyuun\MayaGateway\Util\Logger;
@@ -198,8 +200,9 @@ class WebhookHandler
 
         $dispatch = null;
         if (null !== $event) {
-            $dispatcher = $event_dispatcher_override ?? new EventDispatcher($logger);
-            $dispatch   = $dispatcher->dispatch($event, $payload);
+            $dispatcher = $event_dispatcher_override
+                ?? new EventDispatcher($logger, self::build_payments_endpoint($is_sandbox, $logger));
+            $dispatch = $dispatcher->dispatch($event, $payload);
         }
 
         return [
@@ -284,5 +287,27 @@ class WebhookHandler
             'is_sandbox' => 'yes' === ($option['is_sandbox'] ?? 'yes'),
             'debug_log'  => 'yes' === ($option['debug_log'] ?? 'no'),
         ];
+    }
+
+    /**
+     * Build a {@see Payments} endpoint from the saved Maya keys so the
+     * {@see EventDispatcher}'s manual-capture branch can look up the
+     * authoritative authorization state. Independent of the WC payment-
+     * gateway instance so it works even if WC's gateway dispatch hasn't
+     * fully booted by the time a webhook lands.
+     */
+    private static function build_payments_endpoint(bool $is_sandbox, Logger $logger): Payments
+    {
+        $option = get_option('woocommerce_' . MayaGateway::ID . '_settings', []);
+        if (! is_array($option)) {
+            $option = [];
+        }
+
+        return new Payments(new MayaApiClient(
+            (string) ($option['public_key'] ?? ''),
+            (string) ($option['secret_key'] ?? ''),
+            $is_sandbox,
+            $logger,
+        ));
     }
 }

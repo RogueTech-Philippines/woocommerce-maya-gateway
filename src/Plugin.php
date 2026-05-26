@@ -11,9 +11,12 @@ declare(strict_types=1);
 namespace TaniKyuun\MayaGateway;
 
 use TaniKyuun\MayaGateway\Admin\AdminAssets;
+use TaniKyuun\MayaGateway\Admin\Ajax\CapturePayment;
 use TaniKyuun\MayaGateway\Admin\Ajax\RefreshWebhooks;
 use TaniKyuun\MayaGateway\Admin\Ajax\SimulateWebhook;
 use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
+use TaniKyuun\MayaGateway\Admin\OrderActions\CaptureButton;
+use TaniKyuun\MayaGateway\Admin\OrderActions\CapturePanel;
 use TaniKyuun\MayaGateway\Gateway\MayaGateway;
 use TaniKyuun\MayaGateway\Gateway\ReturnHandler;
 use TaniKyuun\MayaGateway\Webhook\WebhookHandler;
@@ -39,6 +42,9 @@ class Plugin
         TestConnection::register();
         SimulateWebhook::register();
         RefreshWebhooks::register();
+        CapturePayment::register();
+        CaptureButton::register();
+        CapturePanel::register();
         WebhookHandler::register();
         ReturnHandler::register();
     }

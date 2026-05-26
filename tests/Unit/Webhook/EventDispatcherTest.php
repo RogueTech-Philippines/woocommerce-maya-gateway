@@ -12,21 +12,29 @@ namespace TaniKyuun\MayaGateway\Tests\Unit\Webhook;
 
 use Brain\Monkey\Functions;
 use Mockery;
+use TaniKyuun\MayaGateway\Api\Endpoints\Payments;
+use TaniKyuun\MayaGateway\Gateway\MayaGateway;
 use TaniKyuun\MayaGateway\Util\Logger;
+use TaniKyuun\MayaGateway\Value\Money;
+use TaniKyuun\MayaGateway\Value\PaymentRecord;
 use TaniKyuun\MayaGateway\Value\WebhookEvent;
 use TaniKyuun\MayaGateway\Webhook\EventDispatcher;
 use WC_Order;
+use WP_Error;
 
 beforeEach(function (): void {
     Functions\when('__')->alias(static fn(string $text, string $domain = ''): string => $text);
 });
 
-function wc_maya_mock_order(int $id, float $total, bool $is_paid = false): WC_Order
+function wc_maya_mock_order(int $id, float $total, bool $is_paid = false, string $auth_type = 'none'): WC_Order
 {
     $order = Mockery::mock(WC_Order::class);
     $order->shouldReceive('get_id')->andReturn($id);
     $order->shouldReceive('get_total')->andReturn($total);
     $order->shouldReceive('is_paid')->andReturn($is_paid);
+    $order->shouldReceive('get_meta')
+        ->with(MayaGateway::META_AUTHORIZATION_TYPE)
+        ->andReturn($auth_type);
     return $order;
 }
 
@@ -135,19 +143,177 @@ test('missing order returns order_not_found without touching anything', function
     expect($result['reference'])->toBe('999');
 });
 
-test('non-payment-class events (CHECKOUT_SUCCESS, AUTHORIZED) are ignored at this phase', function (): void {
+test('CHECKOUT_SUCCESS is ignored for immediate-capture orders', function (): void {
     $order = wc_maya_mock_order(42, 100.0);
     $order->shouldNotReceive('payment_complete');
     $order->shouldNotReceive('update_status');
 
     Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
 
-    foreach ([ WebhookEvent::CheckoutSuccess, WebhookEvent::Authorized ] as $event) {
-        $result = (new EventDispatcher(new Logger(false)))->dispatch(
-            $event,
-            [ 'requestReferenceNumber' => '42' ],
-        );
-        expect($result['action'])->toBe('ignored');
-        expect($result['event'])->toBe($event->value);
-    }
+    $result = (new EventDispatcher(new Logger(false)))->dispatch(
+        WebhookEvent::CheckoutSuccess,
+        [ 'requestReferenceNumber' => '42' ],
+    );
+
+    expect($result['action'])->toBe('ignored');
+    expect($result['event'])->toBe('CHECKOUT_SUCCESS');
+});
+
+test('AUTHORIZED on an immediate-capture order falls through to ignored', function (): void {
+    $order = wc_maya_mock_order(42, 199.5, auth_type: 'none');
+    $order->shouldNotReceive('payment_complete');
+    $order->shouldNotReceive('update_status');
+    $order->shouldNotReceive('add_order_note');
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    $result = (new EventDispatcher(new Logger(false)))->dispatch(
+        WebhookEvent::Authorized,
+        [ 'requestReferenceNumber' => '42' ],
+    );
+
+    expect($result['action'])->toBe('ignored');
+});
+
+test('AUTHORIZED on a manual-capture order adds a note (no state change)', function (): void {
+    $order = wc_maya_mock_order(42, 199.5, auth_type: 'normal');
+    $order->shouldNotReceive('payment_complete');
+    $order->shouldNotReceive('update_status');
+    $order->shouldReceive('add_order_note')->once();
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    $result = (new EventDispatcher(new Logger(false)))->dispatch(
+        WebhookEvent::Authorized,
+        [ 'id' => 'pay_auth_1', 'requestReferenceNumber' => '42' ],
+    );
+
+    expect($result['action'])->toBe('authorized_note');
+    expect($result['payment_id'])->toBe('pay_auth_1');
+});
+
+function wc_maya_authorization_record(float $authorized, float $captured, string $id = 'auth_1'): PaymentRecord
+{
+    return new PaymentRecord(
+        id: $id,
+        status: 'AUTHORIZED',
+        amount: new Money($authorized, 'PHP'),
+        captured_amount: new Money($captured, 'PHP'),
+        request_reference_number: '42',
+        receipt_number: 'r1',
+        can_void: false,
+        can_refund: false,
+        can_capture: true,
+        authorization_type: 'NORMAL',
+    );
+}
+
+test('PAYMENT_SUCCESS on manual-capture: full capture promotes to payment_complete', function (): void {
+    $order = wc_maya_mock_order(42, 199.5, auth_type: 'normal');
+    $order->shouldReceive('payment_complete')->with('pay_full')->once();
+    $order->shouldNotReceive('add_order_note');
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    $payments = Mockery::mock(Payments::class);
+    $payments->expects('get_by_rrn')->with('42')->andReturn([
+        wc_maya_authorization_record(199.5, 199.5),
+    ]);
+
+    $result = (new EventDispatcher(new Logger(false), $payments))->dispatch(
+        WebhookEvent::PaymentSuccess,
+        [
+            'id'                     => 'pay_full',
+            'amount'                 => 199.5,
+            'requestReferenceNumber' => '42',
+        ],
+    );
+
+    expect($result['action'])->toBe('payment_complete_full_capture');
+    expect($result['order_id'])->toBe(42);
+    expect($result['authorized'])->toBe(199.5);
+    expect($result['captured'])->toBe(199.5);
+});
+
+test('PAYMENT_SUCCESS on manual-capture: partial capture adds a note, no status change', function (): void {
+    $order = wc_maya_mock_order(42, 199.5, auth_type: 'preauthorization');
+    $order->shouldNotReceive('payment_complete');
+    $order->shouldNotReceive('update_status');
+    $order->shouldReceive('add_order_note')->once();
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    $payments = Mockery::mock(Payments::class);
+    $payments->expects('get_by_rrn')->with('42')->andReturn([
+        wc_maya_authorization_record(199.5, 50.0),
+    ]);
+
+    $result = (new EventDispatcher(new Logger(false), $payments))->dispatch(
+        WebhookEvent::PaymentSuccess,
+        [
+            'id'                     => 'pay_partial',
+            'amount'                 => 50.0, // this capture's amount (ignored by dispatcher — auth state is what counts)
+            'requestReferenceNumber' => '42',
+        ],
+    );
+
+    expect($result['action'])->toBe('partial_capture_note');
+    expect($result['captured'])->toBe(50.0);
+    expect($result['authorized'])->toBe(199.5);
+});
+
+test('PAYMENT_SUCCESS on manual-capture fails closed when Payments endpoint is missing', function (): void {
+    $order = wc_maya_mock_order(42, 199.5, auth_type: 'normal');
+    $order->shouldNotReceive('payment_complete');
+    $order->shouldNotReceive('add_order_note');
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    // No Payments injected — production code always provides it, but a wiring
+    // regression would otherwise silently always-partial.
+    $result = (new EventDispatcher(new Logger(false)))->dispatch(
+        WebhookEvent::PaymentSuccess,
+        [ 'id' => 'pay_x', 'amount' => 100.0, 'requestReferenceNumber' => '42' ],
+    );
+
+    expect($result['action'])->toBe('manual_capture_lookup_unavailable');
+});
+
+test('PAYMENT_SUCCESS on manual-capture surfaces lookup failures without mutating the order', function (): void {
+    $order = wc_maya_mock_order(42, 199.5, auth_type: 'normal');
+    $order->shouldNotReceive('payment_complete');
+    $order->shouldNotReceive('add_order_note');
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    $payments = Mockery::mock(Payments::class);
+    $payments->expects('get_by_rrn')->andReturn(new WP_Error('wc_maya_http_500', 'Boom'));
+
+    $result = (new EventDispatcher(new Logger(false), $payments))->dispatch(
+        WebhookEvent::PaymentSuccess,
+        [ 'id' => 'pay_x', 'amount' => 100.0, 'requestReferenceNumber' => '42' ],
+    );
+
+    expect($result['action'])->toBe('manual_capture_lookup_failed');
+});
+
+test('PAYMENT_SUCCESS on manual-capture flags when no AUTHORIZED record is found', function (): void {
+    $order = wc_maya_mock_order(42, 199.5, auth_type: 'normal');
+    $order->shouldNotReceive('payment_complete');
+    $order->shouldNotReceive('add_order_note');
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    $payments = Mockery::mock(Payments::class);
+    // Only CAPTURED records — no AUTHORIZED to read amount/capturedAmount from.
+    $payments->expects('get_by_rrn')->andReturn([
+        new PaymentRecord('cap_only', 'CAPTURED', new Money(100.0, 'PHP'), new Money(100.0, 'PHP'), '42', null, false, true, false, null),
+    ]);
+
+    $result = (new EventDispatcher(new Logger(false), $payments))->dispatch(
+        WebhookEvent::PaymentSuccess,
+        [ 'id' => 'cap_only', 'amount' => 100.0, 'requestReferenceNumber' => '42' ],
+    );
+
+    expect($result['action'])->toBe('manual_capture_no_authorization');
 });

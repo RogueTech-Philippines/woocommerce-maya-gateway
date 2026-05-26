@@ -17,6 +17,7 @@ use TaniKyuun\MayaGateway\Gateway\MayaGateway;
 use TaniKyuun\MayaGateway\Gateway\PaymentProcessor;
 use TaniKyuun\MayaGateway\Settings\SettingsHelper;
 use TaniKyuun\MayaGateway\Util\Logger;
+use TaniKyuun\MayaGateway\Value\AuthorizationType;
 use TaniKyuun\MayaGateway\Value\CheckoutSession;
 use WC_Order;
 use WC_Order_Item_Product;
@@ -161,6 +162,7 @@ test('process persists meta and returns success on a happy-path createCheckout',
     $order = wc_maya_make_order();
     $order->shouldReceive('update_meta_data')->with(MayaGateway::META_CHECKOUT_ID, 'chk_abc')->once();
     $order->shouldReceive('update_meta_data')->with(MayaGateway::META_IDEMPOTENCY_KEY, '42')->once();
+    $order->shouldReceive('update_meta_data')->with(MayaGateway::META_AUTHORIZATION_TYPE, 'none')->once();
     $order->shouldReceive('save')->once();
 
     $endpoint = Mockery::mock(Checkouts::class);
@@ -174,6 +176,45 @@ test('process persists meta and returns success on a happy-path createCheckout',
         'result'   => 'success',
         'redirect' => 'https://maya.test/c/abc',
     ]);
+});
+
+test('build_payload omits authorizationType when authorization is None', function (): void {
+    $order = wc_maya_make_order();
+
+    $payload = PaymentProcessor::build_payload($order, '42', 'https://example.test/r', AuthorizationType::None);
+
+    expect($payload)->not->toHaveKey('authorizationType');
+});
+
+test('build_payload uppercases authorizationType when manual capture is configured', function (): void {
+    $order = wc_maya_make_order();
+
+    $cases = [
+        [ AuthorizationType::Normal,           'NORMAL' ],
+        [ AuthorizationType::FinalAuth,        'FINAL' ],
+        [ AuthorizationType::Preauthorization, 'PREAUTHORIZATION' ],
+    ];
+
+    foreach ($cases as [ $auth_type, $expected_api_value ]) {
+        $payload = PaymentProcessor::build_payload($order, '42', 'https://example.test/r', $auth_type);
+        expect($payload['authorizationType'])->toBe($expected_api_value);
+    }
+});
+
+test('process persists _maya_authorization_type meta', function (): void {
+    $order = wc_maya_make_order();
+    $order->shouldReceive('update_meta_data')->with(MayaGateway::META_CHECKOUT_ID, 'chk_abc')->once();
+    $order->shouldReceive('update_meta_data')->with(MayaGateway::META_IDEMPOTENCY_KEY, '42')->once();
+    $order->shouldReceive('update_meta_data')->with(MayaGateway::META_AUTHORIZATION_TYPE, 'none')->once();
+    $order->shouldReceive('save')->once();
+
+    $endpoint = Mockery::mock(Checkouts::class);
+    $endpoint->expects('create')->andReturn(new CheckoutSession('chk_abc', 'https://maya.test/c/abc'));
+
+    $processor = new PaymentProcessor($endpoint, wc_maya_make_settings_helper(), new Logger(false));
+    $result    = $processor->process($order);
+
+    expect($result['result'])->toBe('success');
 });
 
 test('process returns failure and adds a notice when createCheckout errors', function (): void {

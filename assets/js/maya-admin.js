@@ -349,11 +349,113 @@
     });
   }
 
+  function attachCaptureFlow() {
+    const $trigger = $(".wc-maya-capture-trigger");
+    const $panel = $("#wc-maya-capture-panel");
+
+    if (!$panel.length || $panel.data("wcMayaBound")) {
+      return;
+    }
+    $panel.data("wcMayaBound", true);
+
+    if ($trigger.length) {
+      $trigger.on("click", function () {
+        $panel.attr("hidden", false).find("#wc-maya-capture-amount").trigger("focus");
+      });
+    } else {
+      // No "Capture" trigger button (e.g. all funds already captured) — show
+      // the panel directly so the merchant still sees the balances.
+      $panel.attr("hidden", false);
+    }
+
+    const $submit = $("#wc-maya-capture-submit");
+    const $amount = $("#wc-maya-capture-amount");
+    const $spinner = $("#wc-maya-capture-spinner");
+    const $result = $("#wc-maya-capture-result");
+
+    $submit.on("click", function () {
+      const orderId = $panel.data("order-id");
+      const amount = parseFloat($amount.val() || "0");
+
+      if (!orderId || !(amount > 0)) {
+        $result
+          .empty()
+          .append($('<p class="wc-maya-error"></p>').text(
+            wcMayaAdmin.i18n.unexpectedResponse,
+          ));
+        return;
+      }
+
+      $result.empty().append($("<p></p>").text(wcMayaAdmin.i18n.captureSubmitting));
+      $spinner.addClass("is-active");
+      $submit.prop("disabled", true);
+
+      $.post(wcMayaAdmin.ajaxUrl, {
+        action: wcMayaAdmin.actions.capturePayment,
+        nonce: wcMayaAdmin.nonce,
+        order_id: orderId,
+        capture_amount: amount,
+      })
+        .done(function (response) {
+          if (response && response.success && response.data) {
+            $panel
+              .find(".wc-maya-amount-authorized")
+              .text(Number(response.data.amount_authorized).toFixed(2));
+            $panel
+              .find(".wc-maya-amount-captured")
+              .text(Number(response.data.amount_captured).toFixed(2));
+            $panel
+              .find(".wc-maya-amount-remaining")
+              .text(Number(response.data.amount_remaining).toFixed(2));
+
+            const remaining = Number(response.data.amount_remaining);
+            $amount.val(remaining.toFixed(2));
+            if (!(remaining > 0.005)) {
+              $submit.prop("disabled", true);
+            }
+
+            $result
+              .empty()
+              .append($('<p class="wc-maya-ok"></p>').text(
+                wcMayaAdmin.i18n.captureSuccess,
+              ));
+            return;
+          }
+          const message =
+            response && response.data && response.data.message
+              ? response.data.message
+              : wcMayaAdmin.i18n.unexpectedResponse;
+          $result
+            .empty()
+            .append($('<p class="wc-maya-error"></p>').text(message));
+        })
+        .fail(function (xhr) {
+          const message =
+            xhr &&
+            xhr.responseJSON &&
+            xhr.responseJSON.data &&
+            xhr.responseJSON.data.message
+              ? xhr.responseJSON.data.message
+              : xhr.statusText || wcMayaAdmin.i18n.unexpectedResponse;
+          $result
+            .empty()
+            .append($('<p class="wc-maya-error"></p>').text(message));
+        })
+        .always(function () {
+          $spinner.removeClass("is-active");
+          if (parseFloat($amount.val() || "0") > 0) {
+            $submit.prop("disabled", false);
+          }
+        });
+    });
+  }
+
   $(function () {
     attachKeyToggles();
     attachTestConnection();
     attachSimulator();
     attachWebhookStatusTable();
     attachCopyButton();
+    attachCaptureFlow();
   });
 })(jQuery);

@@ -14,6 +14,7 @@ use TaniKyuun\MayaGateway\Api\Endpoints\Checkouts;
 use TaniKyuun\MayaGateway\Settings\SettingsHelper;
 use TaniKyuun\MayaGateway\Util\IdempotencyKey;
 use TaniKyuun\MayaGateway\Util\Logger;
+use TaniKyuun\MayaGateway\Value\AuthorizationType;
 use TaniKyuun\MayaGateway\Value\Money;
 use WC_Order;
 use WC_Order_Item_Product;
@@ -41,8 +42,14 @@ class PaymentProcessor
      */
     public function process(WC_Order $order): array
     {
-        $reference = IdempotencyKey::for_order((int) $order->get_id());
-        $payload   = self::build_payload($order, $reference, $this->settings->return_url((int) $order->get_id()));
+        $reference     = IdempotencyKey::for_order((int) $order->get_id());
+        $authorization = $this->settings->manual_capture();
+        $payload       = self::build_payload(
+            $order,
+            $reference,
+            $this->settings->return_url((int) $order->get_id()),
+            $authorization,
+        );
 
         $session = $this->endpoint->create($payload);
 
@@ -67,6 +74,7 @@ class PaymentProcessor
 
         $order->update_meta_data(MayaGateway::META_CHECKOUT_ID, $session->checkout_id);
         $order->update_meta_data(MayaGateway::META_IDEMPOTENCY_KEY, $reference);
+        $order->update_meta_data(MayaGateway::META_AUTHORIZATION_TYPE, $authorization->value);
         $order->save();
 
         $this->logger->info('PaymentProcessor: checkout session created.', [
@@ -86,14 +94,23 @@ class PaymentProcessor
      * Pure function — no Maya call, no settings access — so the shape can
      * be pinned with unit tests against a mocked WC_Order.
      *
+     * When `$authorization` is anything other than `None`, an
+     * `authorizationType` field is added so Maya holds the funds instead of
+     * capturing immediately. The merchant captures via the order edit screen
+     * later (Phase 5's CapturePanel).
+     *
      * @return array<string,mixed>
      */
-    public static function build_payload(WC_Order $order, string $reference, string $return_url_base): array
-    {
+    public static function build_payload(
+        WC_Order $order,
+        string $reference,
+        string $return_url_base,
+        AuthorizationType $authorization = AuthorizationType::None,
+    ): array {
         $total    = new Money((float) $order->get_total(), (string) $order->get_currency());
         $shipping = self::shipping_address($order);
 
-        return [
+        $payload = [
             'totalAmount' => [
                 'value'    => $total->value,
                 'currency' => $total->currency,
@@ -132,6 +149,12 @@ class PaymentProcessor
             ],
             'requestReferenceNumber' => $reference,
         ];
+
+        if ($authorization->is_manual_capture()) {
+            $payload['authorizationType'] = $authorization->for_maya_api();
+        }
+
+        return $payload;
     }
 
     /**

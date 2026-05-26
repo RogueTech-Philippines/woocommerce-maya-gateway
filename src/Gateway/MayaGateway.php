@@ -35,9 +35,10 @@ class MayaGateway extends WC_Payment_Gateway
 {
     public const ID = 'maya_checkout';
 
-    public const META_CHECKOUT_ID     = '_maya_checkout_id';
-    public const META_PAYMENT_ID      = '_maya_payment_id';
-    public const META_IDEMPOTENCY_KEY = '_maya_idempotency_key';
+    public const META_CHECKOUT_ID        = '_maya_checkout_id';
+    public const META_PAYMENT_ID         = '_maya_payment_id';
+    public const META_IDEMPOTENCY_KEY    = '_maya_idempotency_key';
+    public const META_AUTHORIZATION_TYPE = '_maya_authorization_type';
 
     public function __construct()
     {
@@ -47,7 +48,7 @@ class MayaGateway extends WC_Payment_Gateway
         $this->has_fields         = false;
         // 'refunds' is added back in Phase 6 alongside RefundProcessor — never
         // advertise a capability the gateway can't actually service.
-        $this->supports           = [ 'products' ];
+        $this->supports = [ 'products' ];
 
         $this->init_form_fields();
         $this->init_settings();

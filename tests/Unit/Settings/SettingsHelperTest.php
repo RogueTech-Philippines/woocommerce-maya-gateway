@@ -12,6 +12,7 @@ namespace TaniKyuun\MayaGateway\Tests\Unit\Settings;
 
 use Brain\Monkey\Functions;
 use TaniKyuun\MayaGateway\Settings\SettingsHelper;
+use TaniKyuun\MayaGateway\Value\AuthorizationType;
 use WC_Payment_Gateway;
 
 /**
@@ -65,4 +66,24 @@ test('return_url always uses home_url even when a local-dev override is set', fu
     // The override is for Maya's webhook server, but the customer's browser
     // is pointed at this site directly — return URL must be home_url-based.
     expect($helper->return_url(42))->toBe('https://example.test/?wc-api=maya_return&order=42');
+});
+
+test('manual_capture defaults to None when the setting is missing', function (): void {
+    $helper = new SettingsHelper(fake_gateway([]));
+
+    expect($helper->manual_capture())->toBe(AuthorizationType::None);
+});
+
+test('manual_capture maps each saved option value onto the matching enum case', function (): void {
+    $cases = [
+        'none'             => AuthorizationType::None,
+        'normal'           => AuthorizationType::Normal,
+        'final'            => AuthorizationType::FinalAuth,
+        'preauthorization' => AuthorizationType::Preauthorization,
+    ];
+
+    foreach ($cases as $stored => $expected) {
+        $helper = new SettingsHelper(fake_gateway([ 'manual_capture' => $stored ]));
+        expect($helper->manual_capture())->toBe($expected);
+    }
 });

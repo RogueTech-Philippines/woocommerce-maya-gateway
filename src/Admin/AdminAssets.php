@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace TaniKyuun\MayaGateway\Admin;
 
+use TaniKyuun\MayaGateway\Admin\Ajax\CapturePayment;
 use TaniKyuun\MayaGateway\Admin\Ajax\RefreshWebhooks;
 use TaniKyuun\MayaGateway\Admin\Ajax\SimulateWebhook;
 use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
@@ -33,7 +34,7 @@ class AdminAssets
 
     public static function enqueue(string $hook): void
     {
-        if (! self::is_maya_settings_screen($hook)) {
+        if (! self::is_maya_settings_screen($hook) && ! self::is_order_edit_screen($hook)) {
             return;
         }
 
@@ -53,6 +54,7 @@ class AdminAssets
                     'testConnection'  => TestConnection::ACTION,
                     'simulateWebhook' => SimulateWebhook::ACTION,
                     'refreshWebhooks' => RefreshWebhooks::ACTION,
+                    'capturePayment'  => CapturePayment::ACTION,
                 ],
                 'i18n' => [
                     'show'                  => __('Show', 'wc-maya-gateway'),
@@ -73,6 +75,8 @@ class AdminAssets
                     'webhookStatusManaged'  => __('Managed by this plugin', 'wc-maya-gateway'),
                     'webhookStatusExternal' => __('External — left alone on save', 'wc-maya-gateway'),
                     'webhookStatusLoading'  => __('Loading…', 'wc-maya-gateway'),
+                    'captureSubmitting'     => __('Capturing…', 'wc-maya-gateway'),
+                    'captureSuccess'        => __('Capture submitted. Webhook will confirm the new balance.', 'wc-maya-gateway'),
                 ],
             ],
         );
@@ -88,5 +92,27 @@ class AdminAssets
         $section = isset($_GET['section']) ? sanitize_key((string) wp_unslash($_GET['section'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
         return 'checkout' === $tab && MayaGateway::ID === $section;
+    }
+
+    /**
+     * Loads on the order edit screen (classic `post.php` for the `shop_order`
+     * post type and the HPOS `woocommerce_page_wc-orders` admin page) so the
+     * Capture button + panel JS is available wherever a Maya order is
+     * edited.
+     */
+    private static function is_order_edit_screen(string $hook): bool
+    {
+        if ('woocommerce_page_wc-orders' === $hook) {
+            return true; // HPOS order list/edit
+        }
+
+        if ('post.php' === $hook) {
+            $post_type = isset($_GET['post']) && function_exists('get_post_type') // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                ? (string) get_post_type((int) wp_unslash($_GET['post'])) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                : '';
+            return 'shop_order' === $post_type;
+        }
+
+        return false;
     }
 }

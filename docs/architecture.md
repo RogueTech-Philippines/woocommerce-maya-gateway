@@ -12,18 +12,24 @@ src/
 │   ├── AdminAssets.php              # enqueue maya-admin.css/js + wp_localize_script
 │   ├── FormFields.php               # WC_Settings_API form_fields array
 │   ├── FieldRenderers.php           # generate_<type>_html implementations + validators
-│   └── Ajax/
-│       ├── TestConnection.php       # AJAX handler; orchestrates the two probes
-│       ├── SimulateWebhook.php      # AJAX handler; POSTs a forged payload at our own webhook endpoint
-│       └── RefreshWebhooks.php      # AJAX handler; re-fetches Maya's registered webhooks for the status table
+│   ├── Ajax/
+│   │   ├── TestConnection.php       # AJAX handler; orchestrates the two probes
+│   │   ├── SimulateWebhook.php      # AJAX handler; POSTs a forged payload at our own webhook endpoint
+│   │   ├── RefreshWebhooks.php      # AJAX handler; re-fetches Maya's registered webhooks for the status table
+│   │   └── CapturePayment.php       # AJAX handler; thin wrapper over CaptureProcessor
+│   └── OrderActions/
+│       ├── CaptureButton.php        # Capture button beside Refund on the order-edit screen
+│       └── CapturePanel.php         # capture form panel rendered below the order totals
 ├── Api/
 │   ├── MayaApiClient.php            # HTTP transport: Basic auth, JSON I/O, logging
 │   └── Endpoints/                   # typed wrappers, one class per logical endpoint group
 │       ├── Checkouts.php            # POST /checkout/v1/checkouts → CheckoutSession
-│       └── Webhooks.php             # GET/POST/DELETE /checkout/v1/webhooks → WebhookRecord(s)
+│       ├── Webhooks.php             # GET/POST/DELETE /checkout/v1/webhooks → WebhookRecord(s)
+│       └── Payments.php             # GET /payments/v1/payment-rrns/{rrn} + POST /payments/v1/payments/{id}/capture
 ├── Gateway/
 │   ├── MayaGateway.php              # WC_Payment_Gateway subclass; delegates to Admin/* and Settings/*
 │   ├── PaymentProcessor.php         # builds checkout payload + Checkouts::create + persists meta
+│   ├── CaptureProcessor.php         # validates + executes capture via Payments::capture (Phase 5)
 │   └── ReturnHandler.php            # wc-api=maya_return — customer redirect handler
 ├── Settings/
 │   └── SettingsHelper.php           # typed getters; used by admin AND runtime callers
@@ -74,6 +80,9 @@ src/
 | Change the checkout payload sent to Maya | [src/Gateway/PaymentProcessor.php](../src/Gateway/PaymentProcessor.php) (`build_payload` is pure-static, unit-testable) |
 | Change customer return-from-Maya behavior | [src/Gateway/ReturnHandler.php](../src/Gateway/ReturnHandler.php) |
 | Change webhook event → order state mapping | [src/Webhook/EventDispatcher.php](../src/Webhook/EventDispatcher.php) (`dispatch()` switch on `WebhookEvent`) |
+| Add a manual-capture authorization mode | `AuthorizationType` enum in [src/Value/AuthorizationType.php](../src/Value/AuthorizationType.php), then surface in [src/Admin/FormFields.php](../src/Admin/FormFields.php) select options |
+| Change capture validation rules | [src/Gateway/CaptureProcessor.php](../src/Gateway/CaptureProcessor.php) (`capture()` validation + dispatch) |
+| Tweak the capture-panel HTML | [templates/admin/capture-panel.php](../templates/admin/capture-panel.php) (`include`-rendered template) |
 
 ## Service-registration convention
 
@@ -214,12 +223,46 @@ form render itself never blocks on Maya.
 `payment_complete()` only fires from the signed webhook, so a forged
 return URL can't promote an order past `processing`.
 
+## Manual capture — authorize-now, capture-later (Phase 5)
+
+When the gateway's `manual_capture` setting is anything other than `none`,
+the flow grows two extra moments:
+
+```text
+On checkout (PaymentProcessor)
+    └── adds authorizationType: UPPERCASE to the createCheckout payload
+    └── persists _maya_authorization_type = 'normal' | 'final' | 'preauthorization'
+
+After return + AUTHORIZED webhook
+    └── EventDispatcher::note_authorized() adds a "Use the Capture panel" note
+    └── order stays in 'processing' (set by ReturnHandler)
+
+Merchant clicks Capture on the order edit page
+    └── CaptureButton::should_render() did the live Payments::get_by_rrn lookup
+        and confirmed an AUTHORIZED + canCapture payment exists
+    └── CapturePanel rendered the form with live authorized/captured/remaining
+    └── JS POSTs to wc_maya_capture_payment AJAX
+    └── CapturePayment::handle() → CaptureProcessor::capture()
+            ├── validate amount > 0 and ≤ (authorized − captured)
+            ├── Payments::capture(payment_id, payload)
+            ├── add_order_note(updated balances)
+            └── return [amount_authorized, amount_captured, amount_remaining]
+
+PAYMENT_SUCCESS webhook arrives (asynchronous, from the capture)
+    └── EventDispatcher detects _maya_authorization_type != none
+        ├── if capturedAmount === amount → payment_complete()
+        └── else → add partial-capture note, leave order in 'processing'
+```
+
+The order's authoritative completion still comes from the signed webhook —
+the capture API response is *informational only*. Two partial captures
+that together cover the authorized amount produce two PAYMENT_SUCCESS
+webhooks; only the second one (with the matching cumulative
+`capturedAmount`) promotes the order.
+
 ## What we do NOT split (yet)
 
 - `RefundProcessor` is not yet broken out. (Phase 6.)
-- Manual-capture (`authorize` → `capture`) branch isn't in
-  `EventDispatcher` yet — the dispatcher's `WebhookEvent::Authorized` arm
-  just logs + skips. (Phase 5.)
 
 ## Adding an endpoint
 
@@ -254,8 +297,13 @@ tests/Unit/
 │   ├── PaymentRecordTest.php
 │   ├── WebhookEventTest.php
 │   └── WebhookRecordTest.php
+├── Api/Endpoints/
+│   ├── CheckoutsTest.php
+│   ├── WebhooksTest.php
+│   └── PaymentsTest.php
 ├── Gateway/
 │   ├── PaymentProcessorTest.php
+│   ├── CaptureProcessorTest.php
 │   └── (ReturnHandler is exit-based — covered by manual smoke test, not unit-tested)
 └── Webhook/
     ├── EventDispatcherTest.php

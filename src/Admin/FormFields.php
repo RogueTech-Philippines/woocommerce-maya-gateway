@@ -86,6 +86,19 @@ class FormFields
                 'description' => __('Writes to WooCommerce → Status → Logs (source: wc-maya-gateway). Warnings and errors are always logged; enable this to also capture successful requests and full response bodies. Disable in production.', 'wc-maya-gateway'),
                 'default'     => 'no',
             ],
+            'manual_capture' => [
+                'title'   => __('Manual capture', 'wc-maya-gateway'),
+                'type'    => 'select',
+                'default' => 'none',
+                'options' => [
+                    'none'             => __('None — auto-capture at checkout (recommended)', 'wc-maya-gateway'),
+                    'normal'           => __('NORMAL — authorize at checkout, capture later (full amount)', 'wc-maya-gateway'),
+                    'final'            => __('FINAL — authorize for the final amount only (no partial captures)', 'wc-maya-gateway'),
+                    'preauthorization' => __('PREAUTHORIZATION — authorize, then capture in one or more pieces', 'wc-maya-gateway'),
+                ],
+                'description' => __('Maya supports authorize-now, capture-later flows. Choose anything other than "None" to expose a Capture panel on the order edit screen.', 'wc-maya-gateway'),
+                'desc_tip'    => true,
+            ],
 
             'webhook_section' => [
                 'title'       => __('Webhooks', 'wc-maya-gateway'),

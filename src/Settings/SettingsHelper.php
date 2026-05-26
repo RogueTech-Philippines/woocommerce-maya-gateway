@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace TaniKyuun\MayaGateway\Settings;
 
+use TaniKyuun\MayaGateway\Value\AuthorizationType;
 use WC_Payment_Gateway;
 
 /**
@@ -44,6 +45,15 @@ class SettingsHelper
     public function debug_log_enabled(): bool
     {
         return 'yes' === $this->gateway->get_option('debug_log', 'no');
+    }
+
+    /**
+     * Currently-selected manual-capture mode. Defaults to None when the
+     * setting is missing or contains a value the enum doesn't recognize.
+     */
+    public function manual_capture(): AuthorizationType
+    {
+        return AuthorizationType::from_setting($this->gateway->get_option('manual_capture', 'none'));
     }
 
     /**

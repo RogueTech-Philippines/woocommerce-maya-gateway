@@ -10,7 +10,7 @@ The current plugin is a clean scaffold. The old plugin (`wc-maya-payment-gateway
 | 2 | Webhook reception | ✅ Done (2026-05-26) | [rebuild-overview/PHASE2-TOUR.md](rebuild-overview/PHASE2-TOUR.md) |
 | 3 | Webhook registration | ✅ Done (2026-05-26) | [rebuild-overview/PHASE3-TOUR.md](rebuild-overview/PHASE3-TOUR.md) |
 | 4 | Payment processing | ✅ Done (2026-05-26) | [rebuild-overview/PHASE4-TOUR.md](rebuild-overview/PHASE4-TOUR.md) |
-| 5 | Manual capture | ⏳ Pending | — |
+| 5 | Manual capture | ✅ Done (2026-05-26) | [rebuild-overview/PHASE5-TOUR.md](rebuild-overview/PHASE5-TOUR.md) |
 | 6 | Refund + void | ⏳ Pending | — |
 | 7 | WC Blocks support | ⏳ Pending | — |
 | 8 | Polish + release | ⏳ Pending | — |
@@ -208,7 +208,7 @@ webhook-retry idempotency. `MayaGateway::process_payment()` is now a
 delegate. Full walkthrough:
 [rebuild-overview/PHASE4-TOUR.md](rebuild-overview/PHASE4-TOUR.md).
 
-### Phase 5 — Manual capture (authorize-then-capture)
+### Phase 5 — Manual capture (authorize-then-capture) ✅ Done
 
 - Add `manual_capture` select to `FormFields` (`none`/`normal`/`final`/`preauthorization`).
 - `PaymentProcessor` honors it: when not `none`, adds `authorizationType: <UPPER>` to the checkout payload and stores `_maya_authorization_type` on the order.
@@ -219,6 +219,20 @@ delegate. Full walkthrough:
 - `EventDispatcher` extended: for orders with `_maya_authorization_type !== 'none'`, completes only when `amount === capturedAmount`, otherwise just adds a status note.
 
 **DoD:** Authorize a sandbox payment → see Capture button on order → capture partial → balances update → capture remainder → order completes via webhook.
+
+**Delivered:** 131 tests passing (was 109 → +22), 430 assertions, lint
+clean. New `Api/Endpoints/Payments` (`get_by_rrn` + `capture`); new
+`Gateway/CaptureProcessor` owning the validation + delegation business
+logic; new `Admin/Ajax/CapturePayment` AJAX wrapper; new
+`Admin/OrderActions/CaptureButton` + `CapturePanel` + template at
+`templates/admin/capture-panel.php`; `FormFields` + `SettingsHelper`
+gained the `manual_capture` enum-backed setting; `PaymentProcessor` adds
+`authorizationType` to the payload + persists
+`_maya_authorization_type` meta; `EventDispatcher` extended with the
+manual-capture branch (full-capture → `payment_complete`, partial →
+note-only, `AUTHORIZED` → note-only). `AdminAssets` now also enqueues on
+order-edit screens (classic + HPOS). Full walkthrough:
+[rebuild-overview/PHASE5-TOUR.md](rebuild-overview/PHASE5-TOUR.md).
 
 ### Phase 6 — Refund + void
 
