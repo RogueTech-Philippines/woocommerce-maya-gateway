@@ -116,6 +116,62 @@ class FieldRenderers
     }
 
     /**
+     * Render an empty "registered webhooks" table — the JS fetches the live
+     * list on page load via {@see \TaniKyuun\MayaGateway\Admin\Ajax\RefreshWebhooks}.
+     * Server-side rendering would slow every admin pageload on a Maya API
+     * call and time out if Maya is sluggish.
+     *
+     * @param array<string,mixed> $data Field config from FormFields.
+     */
+    public static function webhook_status_table(WC_Payment_Gateway $gateway, string $key, array $data): string
+    {
+        unset($gateway, $key);
+        $defaults = [ 'title' => '' ];
+        $data     = wp_parse_args($data, $defaults);
+
+        ob_start();
+        ?>
+        <tr valign="top">
+            <th scope="row" class="titledesc">
+                <label><?php echo esc_html($data['title']); ?></label>
+            </th>
+            <td class="forminp">
+                <table class="widefat striped wc-maya-webhook-status" id="wc-maya-webhook-status-table">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e('Event', 'wc-maya-gateway'); ?></th>
+                            <th><?php esc_html_e('Callback URL', 'wc-maya-gateway'); ?></th>
+                            <th><?php esc_html_e('Created', 'wc-maya-gateway'); ?></th>
+                            <th><?php esc_html_e('Managed', 'wc-maya-gateway'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="wc-maya-webhook-status-placeholder">
+                            <td colspan="4"><?php esc_html_e('Loading…', 'wc-maya-gateway'); ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>
+                    <button
+                        type="button"
+                        class="button button-secondary"
+                        id="wc-maya-refresh-webhooks"
+                        data-action="wc_maya_refresh_webhooks"
+                    >
+                        <?php esc_html_e('Refresh from Maya', 'wc-maya-gateway'); ?>
+                    </button>
+                    <span class="spinner" id="wc-maya-refresh-webhooks-spinner"></span>
+                </p>
+                <p class="description">
+                    <?php esc_html_e('Saving the form (with both API keys set) deletes any of our managed events and re-registers them pointing at the URL above. Other webhooks the merchant registered for unrelated purposes are left alone.', 'wc-maya-gateway'); ?>
+                </p>
+            </td>
+        </tr>
+        <?php
+        return (string) ob_get_clean();
+    }
+
+    /**
      * Render the "Simulate webhook" row: order id input, status select,
      * Simulate button, result panel. Visible only in sandbox mode so it
      * cannot be hammered against a live store.

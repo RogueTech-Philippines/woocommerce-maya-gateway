@@ -12,10 +12,14 @@ namespace TaniKyuun\MayaGateway\Gateway;
 
 use TaniKyuun\MayaGateway\Admin\FieldRenderers;
 use TaniKyuun\MayaGateway\Admin\FormFields;
+use TaniKyuun\MayaGateway\Api\Endpoints\Webhooks;
 use TaniKyuun\MayaGateway\Api\MayaApiClient;
 use TaniKyuun\MayaGateway\Settings\SettingsHelper;
 use TaniKyuun\MayaGateway\Util\Logger;
+use TaniKyuun\MayaGateway\Webhook\Registrar;
+use WC_Admin_Settings;
 use WC_Payment_Gateway;
+use WP_Error;
 
 /**
  * Hosted-checkout integration with Maya.
@@ -78,6 +82,14 @@ class MayaGateway extends WC_Payment_Gateway
         return FieldRenderers::webhook_simulator($this, $key, $data);
     }
 
+    /**
+     * @param array<string,mixed> $data
+     */
+    public function generate_webhook_status_table_html(string $key, array $data): string
+    {
+        return FieldRenderers::webhook_status_table($this, $key, $data);
+    }
+
     public function validate_local_dev_webhook_url_field(string $key, mixed $value): string
     {
         unset($key);
@@ -99,5 +111,78 @@ class MayaGateway extends WC_Payment_Gateway
     public function process_payment($order_id): array
     {
         return [ 'result' => 'failure' ];
+    }
+
+    /**
+     * Save settings + reconcile webhook registrations with Maya.
+     *
+     * Runs the parent save first, then — only on success and only when the
+     * gateway is enabled with both keys present — asks {@see Registrar} to
+     * delete the managed webhook set and recreate it pointing at the
+     * computed webhook URL. Failures are surfaced via WC's admin notice API
+     * so the merchant sees what happened instead of having to dig in logs.
+     */
+    public function process_admin_options(): bool
+    {
+        $saved = parent::process_admin_options();
+        if (! $saved) {
+            return $saved;
+        }
+
+        // Re-read settings the parent just wrote.
+        $this->init_settings();
+        $helper = new SettingsHelper($this);
+
+        if ('yes' !== $this->get_option('enabled')) {
+            return $saved;
+        }
+
+        if ('' === $helper->public_key() || '' === $helper->secret_key()) {
+            WC_Admin_Settings::add_message(
+                __('Saved. Add both Maya API keys to register webhooks automatically.', 'wc-maya-gateway'),
+            );
+            return $saved;
+        }
+
+        $registrar = new Registrar(
+            new Webhooks($this->build_api_client()),
+            new Logger($helper->debug_log_enabled()),
+        );
+
+        $result = $registrar->reconcile($helper->webhook_url());
+
+        if ($result instanceof WP_Error) {
+            WC_Admin_Settings::add_error(sprintf(
+                /* translators: %s: Maya API error message. */
+                __('Webhook registration failed: %s', 'wc-maya-gateway'),
+                $result->get_error_message(),
+            ));
+            return $saved;
+        }
+
+        $created_count = count($result['created']);
+
+        if ([] !== $result['errors']) {
+            WC_Admin_Settings::add_error(sprintf(
+                /* translators: 1: number of webhooks created. 2: comma-joined error list. */
+                __('Webhook registration partially succeeded — %1$d created; errors: %2$s', 'wc-maya-gateway'),
+                $created_count,
+                implode('; ', $result['errors']),
+            ));
+            return $saved;
+        }
+
+        WC_Admin_Settings::add_message(sprintf(
+            /* translators: %d: number of webhooks registered. */
+            _n(
+                '%d webhook registered with Maya.',
+                '%d webhooks registered with Maya.',
+                $created_count,
+                'wc-maya-gateway',
+            ),
+            $created_count,
+        ));
+
+        return $saved;
     }
 }

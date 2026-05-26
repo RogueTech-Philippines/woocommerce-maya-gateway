@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace TaniKyuun\MayaGateway\Admin;
 
+use TaniKyuun\MayaGateway\Admin\Ajax\RefreshWebhooks;
 use TaniKyuun\MayaGateway\Admin\Ajax\SimulateWebhook;
 use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
 use TaniKyuun\MayaGateway\Gateway\MayaGateway;
@@ -51,22 +52,27 @@ class AdminAssets
                 'actions' => [
                     'testConnection'  => TestConnection::ACTION,
                     'simulateWebhook' => SimulateWebhook::ACTION,
+                    'refreshWebhooks' => RefreshWebhooks::ACTION,
                 ],
                 'i18n' => [
-                    'show'               => __('Show', 'wc-maya-gateway'),
-                    'hide'               => __('Hide', 'wc-maya-gateway'),
-                    'testing'            => __('Testing…', 'wc-maya-gateway'),
-                    'copied'             => __('Copied!', 'wc-maya-gateway'),
-                    'copy'               => __('Copy', 'wc-maya-gateway'),
-                    'publicKeyLabel'     => __('Public key', 'wc-maya-gateway'),
-                    'secretKeyLabel'     => __('Secret key', 'wc-maya-gateway'),
-                    'publicKeyOk'        => __('Checkout session created (id %s) — no payment was taken.', 'wc-maya-gateway'),
-                    'secretKeyOk'        => __('%d webhook(s) registered with Maya for this account.', 'wc-maya-gateway'),
-                    'envSandbox'         => __('Testing against sandbox (pg-sandbox.paymaya.com).', 'wc-maya-gateway'),
-                    'envProduction'      => __('Testing against production (pg.maya.ph).', 'wc-maya-gateway'),
-                    'unexpectedResponse' => __('Unexpected response from the server.', 'wc-maya-gateway'),
-                    'simulateAccepted'   => __('handler accepted (would dispatch event)', 'wc-maya-gateway'),
-                    'simulateRejected'   => __('handler rejected (see body for reason)', 'wc-maya-gateway'),
+                    'show'                  => __('Show', 'wc-maya-gateway'),
+                    'hide'                  => __('Hide', 'wc-maya-gateway'),
+                    'testing'               => __('Testing…', 'wc-maya-gateway'),
+                    'copied'                => __('Copied!', 'wc-maya-gateway'),
+                    'copy'                  => __('Copy', 'wc-maya-gateway'),
+                    'publicKeyLabel'        => __('Public key', 'wc-maya-gateway'),
+                    'secretKeyLabel'        => __('Secret key', 'wc-maya-gateway'),
+                    'publicKeyOk'           => __('Checkout session created (id %s) — no payment was taken.', 'wc-maya-gateway'),
+                    'secretKeyOk'           => __('%d webhook(s) registered with Maya for this account.', 'wc-maya-gateway'),
+                    'envSandbox'            => __('Testing against sandbox (pg-sandbox.paymaya.com).', 'wc-maya-gateway'),
+                    'envProduction'         => __('Testing against production (pg.maya.ph).', 'wc-maya-gateway'),
+                    'unexpectedResponse'    => __('Unexpected response from the server.', 'wc-maya-gateway'),
+                    'simulateAccepted'      => __('handler accepted (would dispatch event)', 'wc-maya-gateway'),
+                    'simulateRejected'      => __('handler rejected (see body for reason)', 'wc-maya-gateway'),
+                    'webhookStatusEmpty'    => __('No webhooks registered with Maya for this account.', 'wc-maya-gateway'),
+                    'webhookStatusManaged'  => __('Managed by this plugin', 'wc-maya-gateway'),
+                    'webhookStatusExternal' => __('External — left alone on save', 'wc-maya-gateway'),
+                    'webhookStatusLoading'  => __('Loading…', 'wc-maya-gateway'),
                 ],
             ],
         );

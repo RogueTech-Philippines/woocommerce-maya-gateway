@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace TaniKyuun\MayaGateway;
 
 use TaniKyuun\MayaGateway\Admin\AdminAssets;
+use TaniKyuun\MayaGateway\Admin\Ajax\RefreshWebhooks;
 use TaniKyuun\MayaGateway\Admin\Ajax\SimulateWebhook;
 use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
 use TaniKyuun\MayaGateway\Gateway\MayaGateway;
@@ -36,6 +37,7 @@ class Plugin
         AdminAssets::register();
         TestConnection::register();
         SimulateWebhook::register();
+        RefreshWebhooks::register();
         WebhookHandler::register();
     }
 

@@ -212,6 +212,102 @@
     });
   }
 
+  function renderWebhookStatus($table, rows) {
+    const $tbody = $table.find("tbody").empty();
+
+    if (!rows || rows.length === 0) {
+      $tbody.append(
+        $("<tr></tr>").append(
+          $('<td colspan="4"></td>').text(wcMayaAdmin.i18n.webhookStatusEmpty),
+        ),
+      );
+      return;
+    }
+
+    rows.forEach(function (row) {
+      const $tr = $("<tr></tr>");
+      $tr.append($("<td></td>").append($("<code></code>").text(row.name || "")));
+      $tr.append($("<td></td>").text(row.callbackUrl || ""));
+      $tr.append($("<td></td>").text(row.createdAt || ""));
+      $tr.append(
+        $("<td></td>").text(
+          row.managed
+            ? wcMayaAdmin.i18n.webhookStatusManaged
+            : wcMayaAdmin.i18n.webhookStatusExternal,
+        ),
+      );
+      $tbody.append($tr);
+    });
+  }
+
+  function fetchWebhookStatus() {
+    const $table = $("#wc-maya-webhook-status-table");
+    const $spinner = $("#wc-maya-refresh-webhooks-spinner");
+    const $btn = $("#wc-maya-refresh-webhooks");
+
+    if (!$table.length) {
+      return;
+    }
+
+    $spinner.addClass("is-active");
+    $btn.prop("disabled", true);
+
+    $.post(wcMayaAdmin.ajaxUrl, {
+      action: wcMayaAdmin.actions.refreshWebhooks,
+      nonce: wcMayaAdmin.nonce,
+    })
+      .done(function (response) {
+        if (response && response.success && response.data) {
+          renderWebhookStatus($table, response.data.webhooks);
+          return;
+        }
+        const message =
+          response && response.data && response.data.message
+            ? response.data.message
+            : wcMayaAdmin.i18n.unexpectedResponse;
+        $table
+          .find("tbody")
+          .empty()
+          .append(
+            $("<tr></tr>").append(
+              $('<td colspan="4" class="wc-maya-error"></td>').text(message),
+            ),
+          );
+      })
+      .fail(function (xhr) {
+        const message =
+          xhr &&
+          xhr.responseJSON &&
+          xhr.responseJSON.data &&
+          xhr.responseJSON.data.message
+            ? xhr.responseJSON.data.message
+            : xhr.statusText || wcMayaAdmin.i18n.unexpectedResponse;
+        $table
+          .find("tbody")
+          .empty()
+          .append(
+            $("<tr></tr>").append(
+              $('<td colspan="4" class="wc-maya-error"></td>').text(message),
+            ),
+          );
+      })
+      .always(function () {
+        $spinner.removeClass("is-active");
+        $btn.prop("disabled", false);
+      });
+  }
+
+  function attachWebhookStatusTable() {
+    const $btn = $("#wc-maya-refresh-webhooks");
+    if (!$btn.length || $btn.data("wcMayaBound")) {
+      return;
+    }
+    $btn.data("wcMayaBound", true);
+
+    $btn.on("click", fetchWebhookStatus);
+    fetchWebhookStatus();
+  }
+
   function attachCopyButton() {
     const $btn = $("#wc-maya-copy-webhook-url");
 
@@ -257,6 +353,7 @@
     attachKeyToggles();
     attachTestConnection();
     attachSimulator();
+    attachWebhookStatusTable();
     attachCopyButton();
   });
 })(jQuery);

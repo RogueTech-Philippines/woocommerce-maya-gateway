@@ -14,12 +14,13 @@ src/
 │   ├── FieldRenderers.php           # generate_<type>_html implementations + validators
 │   └── Ajax/
 │       ├── TestConnection.php       # AJAX handler; orchestrates the two probes
-│       └── SimulateWebhook.php      # AJAX handler; POSTs a forged payload at our own webhook endpoint
+│       ├── SimulateWebhook.php      # AJAX handler; POSTs a forged payload at our own webhook endpoint
+│       └── RefreshWebhooks.php      # AJAX handler; re-fetches Maya's registered webhooks for the status table
 ├── Api/
 │   ├── MayaApiClient.php            # HTTP transport: Basic auth, JSON I/O, logging
 │   └── Endpoints/                   # typed wrappers, one class per logical endpoint group
 │       ├── Checkouts.php            # POST /checkout/v1/checkouts → CheckoutSession
-│       └── Webhooks.php             # GET /checkout/v1/webhooks
+│       └── Webhooks.php             # GET/POST/DELETE /checkout/v1/webhooks → WebhookRecord(s)
 ├── Gateway/
 │   └── MayaGateway.php              # WC_Payment_Gateway subclass; delegates to Admin/* and Settings/*
 ├── Settings/
@@ -32,7 +33,8 @@ src/
 │   ├── CheckoutSession.php          # POST /checkout/v1/checkouts response wrapper
 │   ├── Money.php                    # amount + currency pair
 │   ├── PaymentRecord.php            # /payments/v1/payment-rrns/{rrn} item wrapper
-│   └── WebhookEvent.php             # enum of Maya event names + classification helpers
+│   ├── WebhookEvent.php             # enum of Maya event names + classification helpers
+│   └── WebhookRecord.php            # /checkout/v1/webhooks item wrapper (id, name, callbackUrl, timestamps)
 └── Webhook/
     ├── WebhookHandler.php           # REST /wp-json/wc-maya/v1/webhook + wc-api shim; shared process()
     ├── PublicKeyBundle.php          # Maya's sandbox + production RSA public keys
@@ -40,6 +42,7 @@ src/
     ├── SignatureVerifier.php        # RSA-SHA256 against PublicKeyBundle
     ├── TimestampVerifier.php        # ±300s freshness check (epoch-ms)
     ├── IpAllowlist.php              # 4 Maya outbound IPs + source-IP discovery
+    ├── Registrar.php                # idempotent reconcile: delete managed set → create five fresh
     └── Simulator.php                # local-dev forged-payload poster with bypass header
 ```
 
@@ -63,6 +66,8 @@ src/
 | Add or change webhook routing | [src/Webhook/WebhookHandler.php](../src/Webhook/WebhookHandler.php) (`process()` is the shared core) |
 | Rotate Maya's webhook public keys | [src/Webhook/PublicKeyBundle.php](../src/Webhook/PublicKeyBundle.php) |
 | Simulate a webhook locally | "Simulate webhook" button on the gateway settings → [src/Admin/Ajax/SimulateWebhook.php](../src/Admin/Ajax/SimulateWebhook.php) → [src/Webhook/Simulator.php](../src/Webhook/Simulator.php) |
+| Change which events the plugin manages | `MANAGED_EVENTS` constant in [src/Webhook/Registrar.php](../src/Webhook/Registrar.php) |
+| Tweak what happens on settings save | `process_admin_options()` override in [src/Gateway/MayaGateway.php](../src/Gateway/MayaGateway.php) |
 
 ## Service-registration convention
 
@@ -151,6 +156,28 @@ Inside `process()`, every (non-simulated) webhook is checked in this order:
 circuits steps 2–4 so a developer can exercise the pipeline without a
 tunnel.
 
+## Webhook registration — settings-save flow
+
+`MayaGateway::process_admin_options()` is the seam:
+
+1. Parent's `process_admin_options()` writes the form values to `wp_options`.
+2. We re-`init_settings()` so the in-memory gateway sees the fresh values.
+3. If `enabled !== 'yes'` or either API key is empty → just save, show a
+   "saved, add your keys" notice, no Maya call.
+4. Otherwise build a `Webhooks` endpoint client and hand it to
+   `Webhook\Registrar::reconcile($webhook_url)`:
+   - `endpoint->all()` → list every Maya webhook on this account.
+   - For each whose `name` is in `Registrar::MANAGED_EVENTS`, call
+     `endpoint->delete(id)`. Unmanaged entries are skipped.
+   - For each event in `MANAGED_EVENTS`, call
+     `endpoint->create(event, callback_url)`.
+   - Returns `[deleted, created, skipped, errors]` so the gateway can
+     surface success / partial / failure via `WC_Admin_Settings::add_*`.
+
+The status table under the form fetches the current state via the
+`Admin/Ajax/RefreshWebhooks` endpoint on page load and on user click — the
+form render itself never blocks on Maya.
+
 ## What we do NOT split (yet)
 
 - `MayaGateway::process_payment()` lives in the gateway. Move to a
@@ -189,11 +216,13 @@ tests/Unit/
 │   ├── CheckoutSessionTest.php
 │   ├── MoneyTest.php
 │   ├── PaymentRecordTest.php
-│   └── WebhookEventTest.php
+│   ├── WebhookEventTest.php
+│   └── WebhookRecordTest.php
 └── Webhook/
     ├── IpAllowlistTest.php
     ├── PayloadFlattenerTest.php
     ├── PublicKeyBundleTest.php
+    ├── RegistrarTest.php
     ├── SignatureVerifierTest.php
     ├── SimulatorTest.php
     ├── TimestampVerifierTest.php

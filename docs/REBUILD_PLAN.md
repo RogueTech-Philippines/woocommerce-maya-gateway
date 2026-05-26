@@ -8,7 +8,7 @@ The current plugin is a clean scaffold. The old plugin (`wc-maya-payment-gateway
 | --- | --- | --- | --- |
 | 1 | Foundation refactor | ✅ Done (2026-05-26) | [rebuild-overview/PHASE1-TOUR.md](rebuild-overview/PHASE1-TOUR.md) |
 | 2 | Webhook reception | ✅ Done (2026-05-26) | [rebuild-overview/PHASE2-TOUR.md](rebuild-overview/PHASE2-TOUR.md) |
-| 3 | Webhook registration | ⏳ Pending | — |
+| 3 | Webhook registration | ✅ Done (2026-05-26) | [rebuild-overview/PHASE3-TOUR.md](rebuild-overview/PHASE3-TOUR.md) |
 | 4 | Payment processing | ⏳ Pending | — |
 | 5 | Manual capture | ⏳ Pending | — |
 | 6 | Refund + void | ⏳ Pending | — |
@@ -161,16 +161,26 @@ against a real RSA keypair generated per-test. Simulator button rendered in
 sandbox-mode only and gated by `manage_woocommerce`. Full walkthrough:
 [rebuild-overview/PHASE2-TOUR.md](rebuild-overview/PHASE2-TOUR.md).
 
-### Phase 3 — Webhook *registration* (write side)
+### Phase 3 — Webhook *registration* (write side) ✅ Done
 
 Now the merchant doesn't have to click around in Maya Manager.
 
-- `Webhooks` endpoint class: `list()`, `create($event, $url)`, `delete($id)`.
+- `Webhooks` endpoint class: `all()`, `create($event, $url)`, `delete($id)`. (`list` is a PHP reserved word — kept `all()` from Phase 1.)
 - On gateway settings save (`process_admin_options` hook): list → delete any whose name is in our managed set → create five fresh ones (`CHECKOUT_SUCCESS`, `CHECKOUT_FAILURE`, `PAYMENT_SUCCESS`, `PAYMENT_FAILED`, `PAYMENT_EXPIRED`), all pointing at our computed `webhook_url()`.
 - New custom field type `webhook_status_table` — shows currently-registered webhooks live (name, URL, age). Refresh button beside it for AJAX re-sync.
 - Idempotent: re-running registration deletes only our managed set, not the user's other webhooks.
 
 **DoD:** Save settings → Maya Manager shows the five entries pointing at the local-dev override URL (or `home_url()` if blank).
+
+**Delivered:** 95 tests passing (was 82 → +13), 251 assertions, lint clean.
+New `Value/WebhookRecord` DTO; `Api/Endpoints/Webhooks` extended with
+`create()` + `delete()` (and `all()` now returns typed DTOs);
+`Webhook/Registrar` orchestrates idempotent reconcile (delete managed →
+recreate five); `MayaGateway::process_admin_options()` overridden to trigger
+reconciliation on settings save with WC_Admin_Settings notices on success
+/ partial / failure; new `webhook_status_table` field type with
+client-side AJAX fetch via `Admin/Ajax/RefreshWebhooks`. Full walkthrough:
+[rebuild-overview/PHASE3-TOUR.md](rebuild-overview/PHASE3-TOUR.md).
 
 ### Phase 4 — Payment processing (no manual capture yet)
 
