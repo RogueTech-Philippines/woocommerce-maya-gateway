@@ -10,15 +10,16 @@ declare(strict_types=1);
 
 namespace TaniKyuun\MayaGateway;
 
+use TaniKyuun\MayaGateway\Admin\AdminAssets;
+use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
 use TaniKyuun\MayaGateway\Gateway\MayaGateway;
 use TaniKyuun\MayaGateway\Webhook\WebhookHandler;
 
 /**
- * Plugin entry point and service registration.
+ * Plugin entry point — wires services and exits.
  *
- * Placeholder scaffold — wires the gateway and the webhook endpoint so the
- * plugin shows up in WooCommerce and the webhook URL responds. Textdomain
- * loading and other lifecycle plumbing is added incrementally.
+ * Each subsystem owns its own hook registration via a static `register()`
+ * method so this file stays a one-screen map of the plugin's surface.
  */
 class Plugin
 {
@@ -31,6 +32,9 @@ class Plugin
 
         add_filter('woocommerce_payment_gateways', [ self::class, 'register_gateway' ]);
         add_action('woocommerce_api_maya_webhook', [ WebhookHandler::class, 'handle' ]);
+
+        AdminAssets::register();
+        TestConnection::register();
     }
 
     /**

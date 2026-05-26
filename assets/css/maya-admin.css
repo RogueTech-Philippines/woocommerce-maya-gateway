@@ -1,1 +1,63 @@
-/* Placeholder — admin settings styles are added incrementally. */
+/* WooCommerce Maya Gateway — admin settings styles. */
+
+.wc-maya-key-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.wc-maya-key-wrap input.wc-maya-key-input {
+  flex: 1 1 auto;
+  min-width: 280px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.wc-maya-toggle-key {
+  min-width: 60px;
+}
+
+#wc-maya-test-connection-spinner.spinner {
+  float: none;
+  margin: 0 0 0 6px;
+  vertical-align: middle;
+}
+
+#wc-maya-test-connection-result {
+  margin-top: 8px;
+}
+
+#wc-maya-test-connection-result .wc-maya-env {
+  font-style: italic;
+  margin: 4px 0;
+  color: #50575e;
+}
+
+#wc-maya-test-connection-result .wc-maya-probe-list {
+  list-style: disc;
+  margin: 4px 0 4px 18px;
+  padding: 0;
+}
+
+#wc-maya-test-connection-result .wc-maya-probe.wc-maya-ok {
+  color: #1e7e34;
+}
+
+#wc-maya-test-connection-result .wc-maya-probe.wc-maya-error,
+#wc-maya-test-connection-result p.wc-maya-error {
+  color: #b32d2e;
+}
+
+.wc-maya-webhook-url {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.wc-maya-webhook-url input {
+  flex: 1 1 auto;
+  min-width: 320px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: #f6f7f7;
+}
