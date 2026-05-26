@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace TaniKyuun\MayaGateway\Admin;
 
+use TaniKyuun\MayaGateway\Admin\Ajax\SimulateWebhook;
 use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
 use TaniKyuun\MayaGateway\Gateway\MayaGateway;
 
@@ -48,7 +49,8 @@ class AdminAssets
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce'   => wp_create_nonce(self::NONCE_ACTION),
                 'actions' => [
-                    'testConnection' => TestConnection::ACTION,
+                    'testConnection'  => TestConnection::ACTION,
+                    'simulateWebhook' => SimulateWebhook::ACTION,
                 ],
                 'i18n' => [
                     'show'               => __('Show', 'wc-maya-gateway'),
@@ -63,6 +65,8 @@ class AdminAssets
                     'envSandbox'         => __('Testing against sandbox (pg-sandbox.paymaya.com).', 'wc-maya-gateway'),
                     'envProduction'      => __('Testing against production (pg.maya.ph).', 'wc-maya-gateway'),
                     'unexpectedResponse' => __('Unexpected response from the server.', 'wc-maya-gateway'),
+                    'simulateAccepted'   => __('handler accepted (would dispatch event)', 'wc-maya-gateway'),
+                    'simulateRejected'   => __('handler rejected (see body for reason)', 'wc-maya-gateway'),
                 ],
             ],
         );

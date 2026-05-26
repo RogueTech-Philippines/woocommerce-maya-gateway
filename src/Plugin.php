@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace TaniKyuun\MayaGateway;
 
 use TaniKyuun\MayaGateway\Admin\AdminAssets;
+use TaniKyuun\MayaGateway\Admin\Ajax\SimulateWebhook;
 use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
 use TaniKyuun\MayaGateway\Gateway\MayaGateway;
 use TaniKyuun\MayaGateway\Webhook\WebhookHandler;
@@ -31,10 +32,11 @@ class Plugin
         }
 
         add_filter('woocommerce_payment_gateways', [ self::class, 'register_gateway' ]);
-        add_action('woocommerce_api_maya_webhook', [ WebhookHandler::class, 'handle' ]);
 
         AdminAssets::register();
         TestConnection::register();
+        SimulateWebhook::register();
+        WebhookHandler::register();
     }
 
     /**

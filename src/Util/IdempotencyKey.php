@@ -26,8 +26,8 @@ namespace TaniKyuun\MayaGateway\Util;
  */
 class IdempotencyKey
 {
-    public const TEST_PREFIX           = 'wc-maya-test-';
-    public const MAX_REFERENCE_LENGTH  = 36;
+    public const TEST_PREFIX          = 'wc-maya-test-';
+    public const MAX_REFERENCE_LENGTH = 36;
 
     public static function uuid(): string
     {

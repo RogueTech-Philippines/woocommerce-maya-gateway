@@ -7,7 +7,7 @@ The current plugin is a clean scaffold. The old plugin (`wc-maya-payment-gateway
 | # | Phase | Status | Tour |
 | --- | --- | --- | --- |
 | 1 | Foundation refactor | ✅ Done (2026-05-26) | [rebuild-overview/PHASE1-TOUR.md](rebuild-overview/PHASE1-TOUR.md) |
-| 2 | Webhook reception | ⏳ Pending | — |
+| 2 | Webhook reception | ✅ Done (2026-05-26) | [rebuild-overview/PHASE2-TOUR.md](rebuild-overview/PHASE2-TOUR.md) |
 | 3 | Webhook registration | ⏳ Pending | — |
 | 4 | Payment processing | ⏳ Pending | — |
 | 5 | Manual capture | ⏳ Pending | — |
@@ -141,7 +141,7 @@ fixes from real sandbox testing: 36-char `requestReferenceNumber` cap honored;
 Maya per-field validation errors surfaced via `format_parameter_details`. Full
 walkthrough: [rebuild-overview/PHASE1-TOUR.md](rebuild-overview/PHASE1-TOUR.md).
 
-### Phase 2 — Webhook *reception* (read-only side)
+### Phase 2 — Webhook *reception* (read-only side) ✅ Done
 
 Receive and verify, but don't yet dispatch business logic.
 
@@ -152,6 +152,14 @@ Receive and verify, but don't yet dispatch business logic.
 - `Simulator` exposed via an admin button "Simulate webhook" with status options (success/failed/expired) and a target order — POSTs a forged payload to our own endpoint with `X-Simulated-Webhook: true` bypass.
 
 **DoD:** Fire a sandbox payment → see "would dispatch `PAYMENT_SUCCESS` for order N" in the log. Simulate button works locally without tunnel.
+
+**Delivered:** 79 tests passing (was 44 → +35), 186 assertions, lint clean.
+All seven verification primitives shipped (`PublicKeyBundle`, `PayloadFlattener`,
+`SignatureVerifier`, `TimestampVerifier`, `IpAllowlist`, `WebhookHandler`,
+`Simulator`). REST route + `wc-api` shim both live; signature round-trip tested
+against a real RSA keypair generated per-test. Simulator button rendered in
+sandbox-mode only and gated by `manage_woocommerce`. Full walkthrough:
+[rebuild-overview/PHASE2-TOUR.md](rebuild-overview/PHASE2-TOUR.md).
 
 ### Phase 3 — Webhook *registration* (write side)
 

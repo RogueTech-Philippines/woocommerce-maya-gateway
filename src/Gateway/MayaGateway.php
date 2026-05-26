@@ -70,6 +70,14 @@ class MayaGateway extends WC_Payment_Gateway
         return FieldRenderers::webhook_url_display($this, $key, $data);
     }
 
+    /**
+     * @param array<string,mixed> $data
+     */
+    public function generate_webhook_simulator_html(string $key, array $data): string
+    {
+        return FieldRenderers::webhook_simulator($this, $key, $data);
+    }
+
     public function validate_local_dev_webhook_url_field(string $key, mixed $value): string
     {
         unset($key);

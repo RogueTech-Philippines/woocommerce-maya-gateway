@@ -30,7 +30,7 @@ function fake_gateway(array $settings): WC_Payment_Gateway
 
 beforeEach(function (): void {
     Functions\when('home_url')->alias(
-        static fn (string $path = ''): string => 'https://example.test' . $path,
+        static fn(string $path = ''): string => 'https://example.test' . $path,
     );
 });
 
