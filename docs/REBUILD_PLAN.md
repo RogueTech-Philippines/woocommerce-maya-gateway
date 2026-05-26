@@ -11,7 +11,7 @@ The current plugin is a clean scaffold. The old plugin (`wc-maya-payment-gateway
 | 3 | Webhook registration | ✅ Done (2026-05-26) | [rebuild-overview/PHASE3-TOUR.md](rebuild-overview/PHASE3-TOUR.md) |
 | 4 | Payment processing | ✅ Done (2026-05-26) | [rebuild-overview/PHASE4-TOUR.md](rebuild-overview/PHASE4-TOUR.md) |
 | 5 | Manual capture | ✅ Done (2026-05-26) | [rebuild-overview/PHASE5-TOUR.md](rebuild-overview/PHASE5-TOUR.md) |
-| 6 | Refund + void | ⏳ Pending | — |
+| 6 | Refund + void | ✅ Done (2026-05-26) | [rebuild-overview/PHASE6-TOUR.md](rebuild-overview/PHASE6-TOUR.md) |
 | 7 | WC Blocks support | ⏳ Pending | — |
 | 8 | Polish + release | ⏳ Pending | — |
 
@@ -234,13 +234,24 @@ note-only, `AUTHORIZED` → note-only). `AdminAssets` now also enqueues on
 order-edit screens (classic + HPOS). Full walkthrough:
 [rebuild-overview/PHASE5-TOUR.md](rebuild-overview/PHASE5-TOUR.md).
 
-### Phase 6 — Refund + void
+### Phase 6 — Refund + void ✅ Done
 
 - `Payments::void($paymentId, $reason)`, `Payments::refund($paymentId, $payload)`, `Payments::getRefunds($paymentId)`.
 - `RefundProcessor` handles `process_refund`: smart-picks `void` (if `canVoid` + full amount) vs `refund`; handles partial refund split across multiple captured payments (port the algorithm from old plugin lines 953-1063, but isolated and unit-testable).
 - Order notes record each void/refund with API IDs.
 
 **DoD:** Refund flow works for: full void, full refund, partial refund single payment, partial refund split across two captures.
+
+**Delivered:** 163 tests passing (was 135 → +28), 549 assertions, lint
+clean. New `Value/RefundRecord` DTO; `PaymentRecord` gained
+`is_capture` + `is_authorization()` + `created_at`. `Api/Endpoints/Payments`
+extended with `void()`, `refund()`, `get_refunds()`. `Gateway/RefundProcessor`
+with the pure-static `plan_capture_actions()` + `remaining_refundable()`
+algorithm ported from legacy and exhaustively unit-tested.
+`MayaGateway::process_refund` is a thin delegate; `'refunds'` is back in
+`$supports`. All four DoD scenarios green: full void, full refund, partial
+refund single payment, partial refund split across two captures. Full
+walkthrough: [rebuild-overview/PHASE6-TOUR.md](rebuild-overview/PHASE6-TOUR.md).
 
 ### Phase 7 — WC Blocks support
 

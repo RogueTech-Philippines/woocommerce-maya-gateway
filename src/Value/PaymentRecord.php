@@ -30,6 +30,8 @@ final readonly class PaymentRecord
         public bool $can_refund,
         public bool $can_capture,
         public ?string $authorization_type,
+        public bool $is_capture = false,
+        public string $created_at = '',
     ) {}
 
     /**
@@ -57,6 +59,21 @@ final readonly class PaymentRecord
             authorization_type: isset($data['authorizationType']) && is_string($data['authorizationType'])
                 ? $data['authorizationType']
                 : null,
+            // Maya marks captures with an `authorizationPayment` ref pointing
+            // at their parent authorization. Presence alone is enough; we
+            // don't need the nested object's contents (just the boolean fact).
+            is_capture: array_key_exists('authorizationPayment', $data),
+            created_at: isset($data['createdAt']) && is_string($data['createdAt']) ? $data['createdAt'] : '',
         );
+    }
+
+    /**
+     * True when the payment is an *authorization* (vs an immediate-capture
+     * payment or a capture). Maya marks authorizations with the
+     * `authorizationType` field.
+     */
+    public function is_authorization(): bool
+    {
+        return null !== $this->authorization_type;
     }
 }

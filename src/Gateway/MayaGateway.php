@@ -13,6 +13,7 @@ namespace TaniKyuun\MayaGateway\Gateway;
 use TaniKyuun\MayaGateway\Admin\FieldRenderers;
 use TaniKyuun\MayaGateway\Admin\FormFields;
 use TaniKyuun\MayaGateway\Api\Endpoints\Checkouts;
+use TaniKyuun\MayaGateway\Api\Endpoints\Payments;
 use TaniKyuun\MayaGateway\Api\Endpoints\Webhooks;
 use TaniKyuun\MayaGateway\Api\MayaApiClient;
 use TaniKyuun\MayaGateway\Settings\SettingsHelper;
@@ -46,9 +47,7 @@ class MayaGateway extends WC_Payment_Gateway
         $this->method_title       = __('Maya Checkout', 'wc-maya-gateway');
         $this->method_description = __('Accept payments via Maya (cards, e-wallets, QR Ph).', 'wc-maya-gateway');
         $this->has_fields         = false;
-        // 'refunds' is added back in Phase 6 alongside RefundProcessor — never
-        // advertise a capability the gateway can't actually service.
-        $this->supports = [ 'products' ];
+        $this->supports           = [ 'products', 'refunds' ];
 
         $this->init_form_fields();
         $this->init_settings();
@@ -138,6 +137,40 @@ class MayaGateway extends WC_Payment_Gateway
             $helper,
             new Logger($helper->debug_log_enabled()),
         ))->process($order);
+    }
+
+    /**
+     * WC calls this when the merchant clicks Refund. Thin delegate to
+     * {@see RefundProcessor}, which owns the void-vs-refund decision tree
+     * and the partial-amount splitting across captured payments.
+     *
+     * @param int    $order_id
+     * @param ?float $amount   Refund amount in store currency. WC always passes a value.
+     * @param string $reason   Reason the merchant typed into the refund modal.
+     *
+     * @return true|WP_Error
+     */
+    public function process_refund($order_id, $amount = null, $reason = ''): bool|WP_Error
+    {
+        $order = function_exists('wc_get_order') ? wc_get_order($order_id) : null;
+        if (! $order instanceof WC_Order) {
+            return new WP_Error(
+                'wc_maya_refund_no_order',
+                sprintf(
+                    /* translators: %d: order id we couldn't load. */
+                    __('Could not load order #%d for refund.', 'wc-maya-gateway'),
+                    (int) $order_id,
+                ),
+            );
+        }
+
+        $helper    = new SettingsHelper($this);
+        $processor = new RefundProcessor(
+            new Payments($this->build_api_client()),
+            new Logger($helper->debug_log_enabled()),
+        );
+
+        return $processor->process($order, (float) $amount, (string) $reason);
     }
 
     /**

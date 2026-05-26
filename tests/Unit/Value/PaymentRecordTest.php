@@ -64,3 +64,25 @@ test('captured_amount inherits the same currency as amount', function (): void {
 
     expect($record->captured_amount?->currency)->toBe('PHP');
 });
+
+test('is_authorization tracks the authorizationType key presence', function (): void {
+    expect(PaymentRecord::from_array([ 'authorizationType' => 'NORMAL' ])->is_authorization())->toBeTrue();
+    expect(PaymentRecord::from_array([])->is_authorization())->toBeFalse();
+});
+
+test('is_capture tracks the authorizationPayment key presence', function (): void {
+    $capture = PaymentRecord::from_array([
+        'id'                   => 'pay_cap',
+        'authorizationPayment' => [ 'id' => 'pay_auth' ],
+    ]);
+    $standalone = PaymentRecord::from_array([ 'id' => 'pay_solo' ]);
+
+    expect($capture->is_capture)->toBeTrue();
+    expect($standalone->is_capture)->toBeFalse();
+});
+
+test('created_at is captured verbatim from Maya', function (): void {
+    $record = PaymentRecord::from_array([ 'createdAt' => '2026-05-26T07:30:00Z' ]);
+
+    expect($record->created_at)->toBe('2026-05-26T07:30:00Z');
+});

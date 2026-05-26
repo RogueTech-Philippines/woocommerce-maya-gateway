@@ -25,11 +25,12 @@ src/
 │   └── Endpoints/                   # typed wrappers, one class per logical endpoint group
 │       ├── Checkouts.php            # POST /checkout/v1/checkouts → CheckoutSession
 │       ├── Webhooks.php             # GET/POST/DELETE /checkout/v1/webhooks → WebhookRecord(s)
-│       └── Payments.php             # GET /payments/v1/payment-rrns/{rrn} + POST /payments/v1/payments/{id}/capture
+│       └── Payments.php             # /payments/v1/payment-rrns + capture/void/refund/get_refunds
 ├── Gateway/
 │   ├── MayaGateway.php              # WC_Payment_Gateway subclass; delegates to Admin/* and Settings/*
 │   ├── PaymentProcessor.php         # builds checkout payload + Checkouts::create + persists meta
 │   ├── CaptureProcessor.php         # validates + executes capture via Payments::capture (Phase 5)
+│   ├── RefundProcessor.php          # void-vs-refund + multi-capture split decision tree (Phase 6)
 │   └── ReturnHandler.php            # wc-api=maya_return — customer redirect handler
 ├── Settings/
 │   └── SettingsHelper.php           # typed getters; used by admin AND runtime callers
@@ -40,7 +41,8 @@ src/
 │   ├── AuthorizationType.php        # enum: None / Normal / FinalAuth / Preauthorization
 │   ├── CheckoutSession.php          # POST /checkout/v1/checkouts response wrapper
 │   ├── Money.php                    # amount + currency pair
-│   ├── PaymentRecord.php            # /payments/v1/payment-rrns/{rrn} item wrapper
+│   ├── PaymentRecord.php            # /payments/v1/payment-rrns/{rrn} item wrapper (incl. is_capture + is_authorization)
+│   ├── RefundRecord.php             # /payments/v1/payments/{id}/refunds item wrapper (Phase 6)
 │   ├── WebhookEvent.php             # enum of Maya event names + classification helpers
 │   └── WebhookRecord.php            # /checkout/v1/webhooks item wrapper (id, name, callbackUrl, timestamps)
 └── Webhook/
@@ -83,6 +85,7 @@ src/
 | Add a manual-capture authorization mode | `AuthorizationType` enum in [src/Value/AuthorizationType.php](../src/Value/AuthorizationType.php), then surface in [src/Admin/FormFields.php](../src/Admin/FormFields.php) select options |
 | Change capture validation rules | [src/Gateway/CaptureProcessor.php](../src/Gateway/CaptureProcessor.php) (`capture()` validation + dispatch) |
 | Tweak the capture-panel HTML | [templates/admin/capture-panel.php](../templates/admin/capture-panel.php) (`include`-rendered template) |
+| Change void-vs-refund decision or multi-capture split | [src/Gateway/RefundProcessor.php](../src/Gateway/RefundProcessor.php) — `plan_capture_actions()` is pure-static and exhaustively unit-tested |
 
 ## Service-registration convention
 
@@ -260,9 +263,38 @@ that together cover the authorized amount produce two PAYMENT_SUCCESS
 webhooks; only the second one (with the matching cumulative
 `capturedAmount`) promotes the order.
 
-## What we do NOT split (yet)
+## Refund — void-vs-refund decision tree (Phase 6)
 
-- `RefundProcessor` is not yet broken out. (Phase 6.)
+`MayaGateway::process_refund(order_id, amount, reason)` is a thin delegate
+to {@see RefundProcessor::process()}. The processor branches on the order's
+`_maya_authorization_type` meta:
+
+```text
+Immediate-capture order (auth type 'none')
+    └── find PAYMENT_SUCCESS or REFUNDED payment for the RRN
+        ├── canVoid + amount == full → Payments::void()
+        ├── canVoid + amount != full + !canRefund → WP_Error partial_void
+        └── canRefund → Payments::refund(amount)
+
+Manual-capture order (auth type normal/final/preauthorization)
+    └── find AUTHORIZED payment
+        ├── only the auth exists (no captures yet)
+        │   ├── canVoid + amount == full → Payments::void(auth)
+        │   └── partial → WP_Error partial_void
+        └── captures exist
+            ├── sort by createdAt asc
+            ├── for each capture: build available action
+            │   ├── canVoid → action='void' for full capture amount
+            │   └── canRefund → fetch get_refunds, action='refund' for remaining balance
+            ├── plan_capture_actions(available, amount) — pure planner:
+            │   walks the list, consumes amount, returns [action,…]
+            │   └── voids must consume whole; refunds may take partial
+            └── execute_capture_actions(plan, reason)
+                └── each action calls Payments::void or Payments::refund + adds order note
+```
+
+`plan_capture_actions()` and `remaining_refundable()` are public static so
+unit tests can pin every branch of the algorithm without mocking Maya.
 
 ## Adding an endpoint
 
@@ -296,7 +328,8 @@ tests/Unit/
 │   ├── MoneyTest.php
 │   ├── PaymentRecordTest.php
 │   ├── WebhookEventTest.php
-│   └── WebhookRecordTest.php
+│   ├── WebhookRecordTest.php
+│   └── RefundRecordTest.php
 ├── Api/Endpoints/
 │   ├── CheckoutsTest.php
 │   ├── WebhooksTest.php
@@ -304,6 +337,7 @@ tests/Unit/
 ├── Gateway/
 │   ├── PaymentProcessorTest.php
 │   ├── CaptureProcessorTest.php
+│   ├── RefundProcessorTest.php
 │   └── (ReturnHandler is exit-based — covered by manual smoke test, not unit-tested)
 └── Webhook/
     ├── EventDispatcherTest.php

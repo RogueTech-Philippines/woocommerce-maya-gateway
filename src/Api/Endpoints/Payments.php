@@ -12,6 +12,7 @@ namespace TaniKyuun\MayaGateway\Api\Endpoints;
 
 use TaniKyuun\MayaGateway\Api\MayaApiClient;
 use TaniKyuun\MayaGateway\Value\PaymentRecord;
+use TaniKyuun\MayaGateway\Value\RefundRecord;
 use WP_Error;
 
 /**
@@ -78,5 +79,72 @@ class Payments
             MayaApiClient::KEY_SECRET,
         );
         return $response instanceof WP_Error ? $response : PaymentRecord::from_array($response);
+    }
+
+    /**
+     * Void an authorization. Only works while Maya still permits it
+     * (`canVoid: true` on the payment record). Voids are full-amount only.
+     */
+    public function void(string $payment_id, string $reason): PaymentRecord|WP_Error
+    {
+        $response = $this->client->request(
+            'POST',
+            '/payments/v1/payments/' . rawurlencode($payment_id) . '/voids',
+            [ 'reason' => $reason ],
+            MayaApiClient::KEY_SECRET,
+        );
+        return $response instanceof WP_Error ? $response : PaymentRecord::from_array($response);
+    }
+
+    /**
+     * Refund a captured (or immediate-capture PAYMENT_SUCCESS) payment, in
+     * whole or in part.
+     *
+     * The payload mirrors Maya's contract:
+     *
+     *     [
+     *         'totalAmount' => [ 'amount' => 50.0, 'currency' => 'PHP' ],
+     *         'reason'      => 'Customer changed mind',
+     *     ]
+     *
+     * @param array<string,mixed> $payload
+     */
+    public function refund(string $payment_id, array $payload): RefundRecord|WP_Error
+    {
+        $response = $this->client->request(
+            'POST',
+            '/payments/v1/payments/' . rawurlencode($payment_id) . '/refunds',
+            $payload,
+            MayaApiClient::KEY_SECRET,
+        );
+        return $response instanceof WP_Error ? $response : RefundRecord::from_array($response);
+    }
+
+    /**
+     * List every refund Maya has on file for a given payment id. Used by
+     * RefundProcessor to compute the still-refundable balance on a captured
+     * payment (Maya doesn't expose a single "remaining" field).
+     *
+     * @return list<RefundRecord>|WP_Error
+     */
+    public function get_refunds(string $payment_id): array|WP_Error
+    {
+        $response = $this->client->request(
+            'GET',
+            '/payments/v1/payments/' . rawurlencode($payment_id) . '/refunds',
+            null,
+            MayaApiClient::KEY_SECRET,
+        );
+        if ($response instanceof WP_Error) {
+            return $response;
+        }
+
+        $records = [];
+        foreach ($response as $item) {
+            if (is_array($item)) {
+                $records[] = RefundRecord::from_array($item);
+            }
+        }
+        return $records;
     }
 }
