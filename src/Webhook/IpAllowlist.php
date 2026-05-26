@@ -77,7 +77,10 @@ class IpAllowlist
             if (empty($server[ $key ])) {
                 continue;
             }
-            $value = (string) $server[ $key ];
+            $value = trim((string) $server[ $key ]);
+            if ('' === $value) {
+                continue;
+            }
 
             if ('HTTP_X_FORWARDED_FOR' === $key) {
                 $parts = array_map('trim', explode(',', $value));

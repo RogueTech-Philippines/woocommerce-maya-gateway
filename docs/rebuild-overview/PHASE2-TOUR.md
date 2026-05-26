@@ -21,7 +21,10 @@ The rebuild plan asked for:
 
 What was shipped:
 
-- **79 tests passing** (was 44 → +35), 186 assertions.
+- **82 tests passing, 191 assertions** — 40 cases across 7 rewritten/new
+  test suites under `tests/Unit/Webhook/`, for a **net delta of +38** over
+  the Phase 1 baseline of 44 (the 2-test `WebhookHandlerTest` from Phase 1
+  was rewritten, hence 40 - 2 = 38 net).
 - PHP lint clean across the tree (`php-cs-fixer` formatted; `php -l` syntax-OK).
 - All seven verification primitives shipped (`PublicKeyBundle`,
   `PayloadFlattener`, `SignatureVerifier`, `TimestampVerifier`,
@@ -35,7 +38,7 @@ What was shipped:
 
 ## 2. Before / after file tree
 
-```
+```text
 src/
 ├── Plugin.php                       # NEW: SimulateWebhook::register() + WebhookHandler::register()
 ├── Admin/
@@ -55,7 +58,7 @@ src/
     └── Simulator.php                # NEW (Phase 2)
 ```
 
-```
+```text
 tests/Unit/Webhook/
 ├── PayloadFlattenerTest.php         # NEW (Phase 2)
 ├── TimestampVerifierTest.php        # NEW (Phase 2)
@@ -104,7 +107,7 @@ amount-match checks and the manual-capture branch (Phase 5).
 
 ## 4. The verification pipeline at a glance
 
-```
+```text
 POST  /wp-json/wc-maya/v1/webhook                 POST  /?wc-api=maya_webhook
         │   (primary)                                     │   (compat shim)
         ▼                                                 ▼
@@ -336,7 +339,7 @@ nonce) before calling `Simulator::simulate()`.
 While writing the negative test "verify rejects malformed hex in v1", Pest
 flagged a runtime warning:
 
-```
+```text
 hex2bin(): Hexadecimal input string must have an even length
 ```
 
@@ -366,7 +369,7 @@ self-documenting about which shapes are rejected. The takeaway:
 
 ## 9. The simulator — end-to-end walkthrough
 
-```
+```text
 1. Admin opens WC → Settings → Payments → Maya Checkout
    (sandbox mode is on, otherwise the simulator UI is hidden)
    ↓
@@ -429,17 +432,19 @@ pipeline (parser + event extraction + logging) without needing a tunnel.
 
 ## 10. Test coverage delta
 
-| File | Tests | Covers |
+| File | Cases | Covers |
 | --- | --- | --- |
 | `Webhook/PayloadFlattenerTest.php` | 5 | Dotted keys, booleans, empty-skip rule, sort order, realistic golden fixture |
 | `Webhook/TimestampVerifierTest.php` | 5 | Inside window, too-old, too-future, non-numeric, default-clock |
 | `Webhook/SignatureVerifierTest.php` | 7 | Header parse (order, missing, empty), real RSA round-trip, tampered payload, malformed hex, multi-key walk |
-| `Webhook/IpAllowlistTest.php` | 4 | Constants, environment switch, X-Forwarded-For-first, fallback chain |
+| `Webhook/IpAllowlistTest.php` | 6 | Constants, environment switch, CF-over-XFF priority, XFF first-entry fallback, X-Client / Client / REMOTE_ADDR fallback chain, whitespace trimming |
 | `Webhook/PublicKeyBundleTest.php` | 3 | Per-env count, environment switch, every PEM parses with OpenSSL |
 | `Webhook/WebhookHandlerTest.php` (rewritten) | 8 | Non-JSON, stale timestamp, bad signature, bad IP, success path, simulator bypass (sandbox), simulator refused in production, route constants |
-| `Webhook/SimulatorTest.php` | 5 | Payload shape (success), payload shape (failure), invalid status rejection, real wp_remote_post wiring, WP_Error passthrough |
+| `Webhook/SimulatorTest.php` | 6 | Payload shape (success), payload shape (failure), invalid status rejection, sandbox-mode gate, real wp_remote_post wiring, WP_Error passthrough |
 
-37 new tests across 7 files — every primitive owns its own contract.
+**40 cases across the 7 new/rewritten suites** — every primitive owns its
+own contract. Net delta vs. Phase 1's 44-test baseline: **+38** (the 2 cases
+from Phase 1's `WebhookHandlerTest` were replaced, hence 40 − 2 = 38).
 
 ---
 
@@ -452,7 +457,7 @@ cd web/app/plugins/woocommerce-maya-gateway
 ./vendor/bin/pest
 ```
 
-Expected: `Tests: 79 passed (186 assertions)`.
+Expected: `Tests: 82 passed (191 assertions)`.
 
 ### PHP lint
 

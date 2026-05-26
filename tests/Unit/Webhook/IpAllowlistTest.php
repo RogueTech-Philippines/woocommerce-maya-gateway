@@ -49,3 +49,11 @@ test('get_source_ip falls back through X-Client-IP, Client-IP, REMOTE_ADDR', fun
     expect(IpAllowlist::get_source_ip([ 'REMOTE_ADDR' => '127.0.0.1' ]))->toBe('127.0.0.1');
     expect(IpAllowlist::get_source_ip([]))->toBe('');
 });
+
+test('get_source_ip trims whitespace and skips all-whitespace values', function (): void {
+    expect(IpAllowlist::get_source_ip([ 'HTTP_CF_CONNECTING_IP' => "  3.1.199.75\n" ]))->toBe('3.1.199.75');
+    expect(IpAllowlist::get_source_ip([
+        'HTTP_CF_CONNECTING_IP' => '   ',
+        'REMOTE_ADDR'           => '127.0.0.1',
+    ]))->toBe('127.0.0.1');
+});

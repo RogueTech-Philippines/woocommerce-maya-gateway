@@ -14,6 +14,7 @@ use TaniKyuun\MayaGateway\Admin\AdminAssets;
 use TaniKyuun\MayaGateway\Gateway\MayaGateway;
 use TaniKyuun\MayaGateway\Settings\SettingsHelper;
 use TaniKyuun\MayaGateway\Webhook\Simulator;
+use WC_Order;
 use WP_Error;
 
 /**
@@ -52,13 +53,15 @@ class SimulateWebhook
             wp_send_json_error([ 'message' => __('Pick a valid simulator status.', 'wc-maya-gateway') ], 400);
         }
 
+        // wc_get_order() can return WC_Order, WC_Order_Refund, or false. The
+        // simulator only models payment events so refunds aren't valid targets.
         $order = function_exists('wc_get_order') ? wc_get_order($order_id) : null;
-        if (! $order) {
+        if (! $order instanceof WC_Order) {
             wp_send_json_error(
                 [
                     'message' => sprintf(
                         /* translators: %d: order id the user typed. */
-                        __('Order #%d was not found.', 'wc-maya-gateway'),
+                        __('Order #%d was not found (or is not a regular order — refunds are not simulatable).', 'wc-maya-gateway'),
                         $order_id,
                     ),
                 ],
