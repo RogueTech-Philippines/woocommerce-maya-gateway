@@ -12,6 +12,7 @@ namespace TaniKyuun\MayaGateway\Tests\Unit\Webhook;
 
 use Mockery;
 use TaniKyuun\MayaGateway\Util\Logger;
+use TaniKyuun\MayaGateway\Webhook\EventDispatcher;
 use TaniKyuun\MayaGateway\Webhook\SignatureVerifier;
 use TaniKyuun\MayaGateway\Webhook\WebhookHandler;
 
@@ -32,6 +33,14 @@ function wc_maya_verifier_rejecting(): SignatureVerifier
     $verifier = Mockery::mock(SignatureVerifier::class);
     $verifier->shouldReceive('verify')->andReturn(false);
     return $verifier;
+}
+
+function wc_maya_dispatcher_recording(): EventDispatcher
+{
+    $dispatcher = Mockery::mock(EventDispatcher::class);
+    $dispatcher->shouldReceive('dispatch')
+        ->andReturn([ 'action' => 'noop_for_test' ]);
+    return $dispatcher;
 }
 
 test('rejects a non-JSON body with 400', function (): void {
@@ -105,11 +114,21 @@ test('rejects an IP outside the allowlist with 403', function (): void {
     expect($result['body']['error']['code'])->toBe('source_ip_blocked');
 });
 
-test('returns 200 with parsed event when all checks pass', function (): void {
+test('returns 200 with parsed event and dispatch result when all checks pass', function (): void {
     $body = (string) json_encode([
         'status'                 => 'PAYMENT_SUCCESS',
         'requestReferenceNumber' => '42',
+        'amount'                 => 199.5,
+        'id'                     => 'pay_abc',
     ]);
+
+    $dispatcher = Mockery::mock(EventDispatcher::class);
+    $dispatcher->expects('dispatch')
+        ->withArgs(static function ($event, $payload): bool {
+            return 'PAYMENT_SUCCESS' === $event->value
+                && '42'              === ($payload['requestReferenceNumber'] ?? null);
+        })
+        ->andReturn([ 'action' => 'payment_complete', 'order_id' => 42 ]);
 
     $result = WebhookHandler::process(
         $body,
@@ -121,6 +140,7 @@ test('returns 200 with parsed event when all checks pass', function (): void {
         true,
         new Logger(false),
         wc_maya_verifier_accepting(),
+        $dispatcher,
     );
 
     expect($result['status'])->toBe(200);
@@ -130,6 +150,7 @@ test('returns 200 with parsed event when all checks pass', function (): void {
         'event'     => 'PAYMENT_SUCCESS',
         'reference' => '42',
     ]);
+    expect($result['body']['dispatch'])->toBe([ 'action' => 'payment_complete', 'order_id' => 42 ]);
 });
 
 test('honors the X-Simulated-Webhook bypass in sandbox without checking timestamp, signature, or IP', function (): void {
@@ -145,11 +166,40 @@ test('honors the X-Simulated-Webhook bypass in sandbox without checking timestam
         true,                                           // sandbox
         new Logger(false),
         wc_maya_verifier_rejecting(),                   // would reject if asked
+        wc_maya_dispatcher_recording(),
     );
 
     expect($result['status'])->toBe(200);
     expect($result['body']['simulated'])->toBeTrue();
     expect($result['body']['event'])->toBe('PAYMENT_FAILED');
+    expect($result['body']['dispatch'])->toBe([ 'action' => 'noop_for_test' ]);
+});
+
+test('does not call the dispatcher when the event is unknown to the enum', function (): void {
+    $body = (string) json_encode([
+        'status'                 => 'TOTALLY_UNKNOWN_EVENT',
+        'requestReferenceNumber' => '7',
+    ]);
+
+    $dispatcher = Mockery::mock(EventDispatcher::class);
+    $dispatcher->shouldNotReceive('dispatch');
+
+    $result = WebhookHandler::process(
+        $body,
+        [
+            WebhookHandler::HEADER_TIMESTAMP => wc_maya_fresh_timestamp(),
+            WebhookHandler::HEADER_SIGNATURE => 'nonce=n,v1=ab',
+        ],
+        '13.229.160.234',
+        true,
+        new Logger(false),
+        wc_maya_verifier_accepting(),
+        $dispatcher,
+    );
+
+    expect($result['status'])->toBe(200);
+    expect($result['body']['event'])->toBeNull();
+    expect($result['body']['dispatch'])->toBeNull();
 });
 
 test('refuses the simulator bypass in production mode', function (): void {

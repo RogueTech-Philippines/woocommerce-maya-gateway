@@ -9,7 +9,7 @@ The current plugin is a clean scaffold. The old plugin (`wc-maya-payment-gateway
 | 1 | Foundation refactor | ✅ Done (2026-05-26) | [rebuild-overview/PHASE1-TOUR.md](rebuild-overview/PHASE1-TOUR.md) |
 | 2 | Webhook reception | ✅ Done (2026-05-26) | [rebuild-overview/PHASE2-TOUR.md](rebuild-overview/PHASE2-TOUR.md) |
 | 3 | Webhook registration | ✅ Done (2026-05-26) | [rebuild-overview/PHASE3-TOUR.md](rebuild-overview/PHASE3-TOUR.md) |
-| 4 | Payment processing | ⏳ Pending | — |
+| 4 | Payment processing | ✅ Done (2026-05-26) | [rebuild-overview/PHASE4-TOUR.md](rebuild-overview/PHASE4-TOUR.md) |
 | 5 | Manual capture | ⏳ Pending | — |
 | 6 | Refund + void | ⏳ Pending | — |
 | 7 | WC Blocks support | ⏳ Pending | — |
@@ -182,7 +182,7 @@ reconciliation on settings save with WC_Admin_Settings notices on success
 client-side AJAX fetch via `Admin/Ajax/RefreshWebhooks`. Full walkthrough:
 [rebuild-overview/PHASE3-TOUR.md](rebuild-overview/PHASE3-TOUR.md).
 
-### Phase 4 — Payment processing (no manual capture yet)
+### Phase 4 — Payment processing (no manual capture yet) ✅ Done
 
 The happy path: customer can actually pay with sandbox cards.
 
@@ -192,6 +192,21 @@ The happy path: customer can actually pay with sandbox cards.
 - `MayaGateway::process_payment` becomes a one-liner delegating to `PaymentProcessor`.
 
 **DoD:** Sandbox card flow works end-to-end. Order transitions: `pending` → `processing` (return) → `completed` (webhook).
+
+**Delivered:** 109 tests passing (was 95 → +14), 349 assertions, lint
+clean. `Gateway/PaymentProcessor` composes the full Maya checkout payload
+(shipping-falls-back-to-billing, line items, redirects), calls
+`Checkouts::create`, persists `_maya_checkout_id` + `_maya_idempotency_key`,
+returns the WC `[result, redirect]` tuple. `Gateway/ReturnHandler` handles
+`?wc-api=maya_return`: idempotent flip to `processing` on success, redirect
+to `get_checkout_order_received_url()`; failed → notice + back to payment
+page. `Webhook/EventDispatcher` wired into `WebhookHandler::process()` —
+`PAYMENT_SUCCESS` with matching amount → `payment_complete()`; mismatch →
+log + order note + leave alone; `PAYMENT_FAILED` / `PAYMENT_EXPIRED` /
+`AUTH_FAILED` → `update_status('failed')`; already-paid orders skipped for
+webhook-retry idempotency. `MayaGateway::process_payment()` is now a
+delegate. Full walkthrough:
+[rebuild-overview/PHASE4-TOUR.md](rebuild-overview/PHASE4-TOUR.md).
 
 ### Phase 5 — Manual capture (authorize-then-capture)
 

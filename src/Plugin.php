@@ -15,6 +15,7 @@ use TaniKyuun\MayaGateway\Admin\Ajax\RefreshWebhooks;
 use TaniKyuun\MayaGateway\Admin\Ajax\SimulateWebhook;
 use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
 use TaniKyuun\MayaGateway\Gateway\MayaGateway;
+use TaniKyuun\MayaGateway\Gateway\ReturnHandler;
 use TaniKyuun\MayaGateway\Webhook\WebhookHandler;
 
 /**
@@ -39,6 +40,7 @@ class Plugin
         SimulateWebhook::register();
         RefreshWebhooks::register();
         WebhookHandler::register();
+        ReturnHandler::register();
     }
 
     /**

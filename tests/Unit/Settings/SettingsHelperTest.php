@@ -58,3 +58,11 @@ test('webhook_url returns the override verbatim when it already contains wc-api'
 
     expect($helper->webhook_url())->toBe($full);
 });
+
+test('return_url always uses home_url even when a local-dev override is set', function (): void {
+    $helper = new SettingsHelper(fake_gateway([ 'local_dev_webhook_url' => 'https://tunnel.example.test' ]));
+
+    // The override is for Maya's webhook server, but the customer's browser
+    // is pointed at this site directly — return URL must be home_url-based.
+    expect($helper->return_url(42))->toBe('https://example.test/?wc-api=maya_return&order=42');
+});

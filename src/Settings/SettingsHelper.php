@@ -22,6 +22,7 @@ use WC_Payment_Gateway;
 class SettingsHelper
 {
     public const WEBHOOK_ROUTE = 'maya_webhook';
+    public const RETURN_ROUTE  = 'maya_return';
 
     public function __construct(private readonly WC_Payment_Gateway $gateway) {}
 
@@ -76,5 +77,18 @@ class SettingsHelper
         }
 
         return rtrim($override, '/') . '/' . $path;
+    }
+
+    /**
+     * Customer-return URL Maya redirects the buyer's browser to.
+     *
+     * Always `home_url()`-based (never the local-dev override): the override
+     * is for Maya's server-to-server webhook, but the customer's browser is
+     * pointed at this site directly. PaymentProcessor appends
+     * `&status=success|failed|cancel` per Maya's redirectUrl contract.
+     */
+    public function return_url(int $order_id): string
+    {
+        return home_url('/?wc-api=' . self::RETURN_ROUTE . '&order=' . $order_id);
     }
 }

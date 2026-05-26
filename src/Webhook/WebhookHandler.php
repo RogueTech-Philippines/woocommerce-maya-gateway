@@ -114,13 +114,16 @@ class WebhookHandler
     }
 
     /**
-     * Verify a webhook request and report what *would* be dispatched.
+     * Verify a webhook request and dispatch it to the order state machine.
      *
-     * Returns `['status' => int, 'body' => array]`. Phase 2 stops at the log
-     * line — order updates land in Phase 4 once the EventDispatcher exists.
+     * Returns `['status' => int, 'body' => array]`. The body now includes
+     * `dispatch` — the structured result the {@see EventDispatcher} returned
+     * for the event — so simulator and integration tests can see exactly
+     * what state change (if any) happened.
      *
      * @param array<string,string> $headers Lowercased header lookup.
      * @param ?SignatureVerifier   $signature_verifier_override Injection seam for tests.
+     * @param ?EventDispatcher     $event_dispatcher_override   Injection seam for tests.
      *
      * @return array{status: int, body: array<string,mixed>}
      */
@@ -131,6 +134,7 @@ class WebhookHandler
         bool $is_sandbox,
         Logger $logger,
         ?SignatureVerifier $signature_verifier_override = null,
+        ?EventDispatcher $event_dispatcher_override = null,
     ): array {
         $payload = json_decode($body, true);
 
@@ -180,7 +184,7 @@ class WebhookHandler
 
         $logger->info(
             sprintf(
-                'Webhook verified%s — would dispatch %s for order %s.',
+                'Webhook verified%s — dispatching %s for order %s.',
                 $is_simulated ? ' (simulated)' : '',
                 null !== $event ? $event->value : 'UNKNOWN(' . (string) $event_name . ')',
                 '' === $reference ? '?' : $reference,
@@ -192,6 +196,12 @@ class WebhookHandler
             ],
         );
 
+        $dispatch = null;
+        if (null !== $event) {
+            $dispatcher = $event_dispatcher_override ?? new EventDispatcher($logger);
+            $dispatch   = $dispatcher->dispatch($event, $payload);
+        }
+
         return [
             'status' => 200,
             'body'   => [
@@ -199,6 +209,7 @@ class WebhookHandler
                 'simulated' => $is_simulated,
                 'event'     => null !== $event ? $event->value : null,
                 'reference' => '' === $reference ? null : $reference,
+                'dispatch'  => $dispatch,
             ],
         ];
     }

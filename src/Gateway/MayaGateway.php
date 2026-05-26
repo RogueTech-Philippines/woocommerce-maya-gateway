@@ -12,12 +12,14 @@ namespace TaniKyuun\MayaGateway\Gateway;
 
 use TaniKyuun\MayaGateway\Admin\FieldRenderers;
 use TaniKyuun\MayaGateway\Admin\FormFields;
+use TaniKyuun\MayaGateway\Api\Endpoints\Checkouts;
 use TaniKyuun\MayaGateway\Api\Endpoints\Webhooks;
 use TaniKyuun\MayaGateway\Api\MayaApiClient;
 use TaniKyuun\MayaGateway\Settings\SettingsHelper;
 use TaniKyuun\MayaGateway\Util\Logger;
 use TaniKyuun\MayaGateway\Webhook\Registrar;
 use WC_Admin_Settings;
+use WC_Order;
 use WC_Payment_Gateway;
 use WP_Error;
 
@@ -33,8 +35,9 @@ class MayaGateway extends WC_Payment_Gateway
 {
     public const ID = 'maya_checkout';
 
-    public const META_CHECKOUT_ID = '_maya_checkout_id';
-    public const META_PAYMENT_ID  = '_maya_payment_id';
+    public const META_CHECKOUT_ID     = '_maya_checkout_id';
+    public const META_PAYMENT_ID      = '_maya_payment_id';
+    public const META_IDEMPOTENCY_KEY = '_maya_idempotency_key';
 
     public function __construct()
     {
@@ -42,6 +45,8 @@ class MayaGateway extends WC_Payment_Gateway
         $this->method_title       = __('Maya Checkout', 'wc-maya-gateway');
         $this->method_description = __('Accept payments via Maya (cards, e-wallets, QR Ph).', 'wc-maya-gateway');
         $this->has_fields         = false;
+        // 'refunds' is added back in Phase 6 alongside RefundProcessor — never
+        // advertise a capability the gateway can't actually service.
         $this->supports           = [ 'products' ];
 
         $this->init_form_fields();
@@ -110,7 +115,28 @@ class MayaGateway extends WC_Payment_Gateway
 
     public function process_payment($order_id): array
     {
-        return [ 'result' => 'failure' ];
+        $order = function_exists('wc_get_order') ? wc_get_order($order_id) : null;
+        if (! $order instanceof WC_Order) {
+            if (function_exists('wc_add_notice')) {
+                wc_add_notice(
+                    sprintf(
+                        /* translators: %d: order id we couldn't load. */
+                        __('Could not load order #%d.', 'wc-maya-gateway'),
+                        (int) $order_id,
+                    ),
+                    'error',
+                );
+            }
+            return [ 'result' => 'failure' ];
+        }
+
+        $helper = new SettingsHelper($this);
+
+        return (new PaymentProcessor(
+            new Checkouts($this->build_api_client()),
+            $helper,
+            new Logger($helper->debug_log_enabled()),
+        ))->process($order);
     }
 
     /**

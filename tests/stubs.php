@@ -62,6 +62,15 @@ if (! class_exists('WC_Order')) {
     }
 }
 
+if (! class_exists('WC_Order_Item_Product')) {
+    /**
+     * Skeleton WC_Order_Item_Product — instanceof check needs the class to exist.
+     */
+    class WC_Order_Item_Product
+    { // phpcs:ignore
+    }
+}
+
 if (! class_exists('WC_Payment_Gateway')) {
     /**
      * Skeleton WC_Payment_Gateway so the gateway class can be loaded.

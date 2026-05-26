@@ -22,7 +22,9 @@ src/
 │       ├── Checkouts.php            # POST /checkout/v1/checkouts → CheckoutSession
 │       └── Webhooks.php             # GET/POST/DELETE /checkout/v1/webhooks → WebhookRecord(s)
 ├── Gateway/
-│   └── MayaGateway.php              # WC_Payment_Gateway subclass; delegates to Admin/* and Settings/*
+│   ├── MayaGateway.php              # WC_Payment_Gateway subclass; delegates to Admin/* and Settings/*
+│   ├── PaymentProcessor.php         # builds checkout payload + Checkouts::create + persists meta
+│   └── ReturnHandler.php            # wc-api=maya_return — customer redirect handler
 ├── Settings/
 │   └── SettingsHelper.php           # typed getters; used by admin AND runtime callers
 ├── Util/
@@ -43,6 +45,7 @@ src/
     ├── TimestampVerifier.php        # ±300s freshness check (epoch-ms)
     ├── IpAllowlist.php              # 4 Maya outbound IPs + source-IP discovery
     ├── Registrar.php                # idempotent reconcile: delete managed set → create five fresh
+    ├── EventDispatcher.php          # verified event → WC order state change (Phase 4)
     └── Simulator.php                # local-dev forged-payload poster with bypass header
 ```
 
@@ -68,6 +71,9 @@ src/
 | Simulate a webhook locally | "Simulate webhook" button on the gateway settings → [src/Admin/Ajax/SimulateWebhook.php](../src/Admin/Ajax/SimulateWebhook.php) → [src/Webhook/Simulator.php](../src/Webhook/Simulator.php) |
 | Change which events the plugin manages | `MANAGED_EVENTS` constant in [src/Webhook/Registrar.php](../src/Webhook/Registrar.php) |
 | Tweak what happens on settings save | `process_admin_options()` override in [src/Gateway/MayaGateway.php](../src/Gateway/MayaGateway.php) |
+| Change the checkout payload sent to Maya | [src/Gateway/PaymentProcessor.php](../src/Gateway/PaymentProcessor.php) (`build_payload` is pure-static, unit-testable) |
+| Change customer return-from-Maya behavior | [src/Gateway/ReturnHandler.php](../src/Gateway/ReturnHandler.php) |
+| Change webhook event → order state mapping | [src/Webhook/EventDispatcher.php](../src/Webhook/EventDispatcher.php) (`dispatch()` switch on `WebhookEvent`) |
 
 ## Service-registration convention
 
@@ -178,12 +184,42 @@ The status table under the form fetches the current state via the
 `Admin/Ajax/RefreshWebhooks` endpoint on page load and on user click — the
 form render itself never blocks on Maya.
 
+## Payment processing — checkout → return → webhook
+
+```text
+1. customer clicks "Place order"
+   └── MayaGateway::process_payment(order_id)
+       └── PaymentProcessor::process($order):
+           ├── build_payload(order, RRN, return_url)
+           ├── Checkouts::create(payload)
+           ├── persist _maya_checkout_id + _maya_idempotency_key
+           └── return [result: success, redirect: <Maya hosted page>]
+2. customer enters card on Maya's hosted page, redirected back to:
+   └── ?wc-api=maya_return&order=<id>&status=success
+       └── ReturnHandler::handle()
+           ├── if status=failed: notice + back to checkout payment URL
+           └── else: flip pending → processing, empty cart, redirect to
+                     get_checkout_order_received_url()
+3. Maya's webhook server independently POSTs the signed result:
+   └── WebhookHandler::process() (Phase 2 verify pipeline)
+       └── on success: EventDispatcher::dispatch(WebhookEvent, payload):
+           ├── PAYMENT_SUCCESS + amount match → $order->payment_complete($paymentId)
+           ├── PAYMENT_SUCCESS + amount mismatch → log + order note (no state change)
+           ├── PAYMENT_FAILED / EXPIRED / AUTH_FAILED → update_status('failed', note)
+           ├── already-paid orders → log + skip (idempotency for retries)
+           └── other events (CHECKOUT_*, AUTHORIZED) → log + skip (Phase 5 layer)
+```
+
+`ReturnHandler` *never* marks orders completed — the browser is untrusted.
+`payment_complete()` only fires from the signed webhook, so a forged
+return URL can't promote an order past `processing`.
+
 ## What we do NOT split (yet)
 
-- `MayaGateway::process_payment()` lives in the gateway. Move to a
-  `PaymentProcessor` only when it grows beyond a screenful. (Phase 4.)
-- `EventDispatcher` is not yet broken out — `WebhookHandler::process()`
-  only logs the would-be dispatch. (Phase 4.)
+- `RefundProcessor` is not yet broken out. (Phase 6.)
+- Manual-capture (`authorize` → `capture`) branch isn't in
+  `EventDispatcher` yet — the dispatcher's `WebhookEvent::Authorized` arm
+  just logs + skips. (Phase 5.)
 
 ## Adding an endpoint
 
@@ -218,7 +254,11 @@ tests/Unit/
 │   ├── PaymentRecordTest.php
 │   ├── WebhookEventTest.php
 │   └── WebhookRecordTest.php
+├── Gateway/
+│   ├── PaymentProcessorTest.php
+│   └── (ReturnHandler is exit-based — covered by manual smoke test, not unit-tested)
 └── Webhook/
+    ├── EventDispatcherTest.php
     ├── IpAllowlistTest.php
     ├── PayloadFlattenerTest.php
     ├── PublicKeyBundleTest.php
