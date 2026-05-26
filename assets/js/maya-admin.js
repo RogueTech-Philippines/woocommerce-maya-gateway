@@ -141,6 +141,77 @@
     });
   }
 
+  function attachSimulator() {
+    const $btn = $("#wc-maya-simulate-webhook");
+    const $spinner = $("#wc-maya-simulate-spinner");
+    const $result = $("#wc-maya-simulate-result");
+    const $orderId = $("#wc-maya-simulate-order-id");
+    const $status = $("#wc-maya-simulate-status");
+
+    if (!$btn.length || $btn.data("wcMayaBound")) {
+      return;
+    }
+    $btn.data("wcMayaBound", true);
+
+    $btn.on("click", function () {
+      $result.empty();
+      $spinner.addClass("is-active");
+      $btn.prop("disabled", true);
+
+      const payload = {
+        action: wcMayaAdmin.actions.simulateWebhook,
+        nonce: wcMayaAdmin.nonce,
+        order_id: $orderId.val() || "",
+        status: $status.val() || "",
+      };
+
+      $.post(wcMayaAdmin.ajaxUrl, payload)
+        .done(function (response) {
+          if (response && response.success && response.data) {
+            const summary =
+              "HTTP " +
+              response.data.status +
+              " · " +
+              (response.data.body && response.data.body.received
+                ? wcMayaAdmin.i18n.simulateAccepted
+                : wcMayaAdmin.i18n.simulateRejected);
+            $result
+              .empty()
+              .append($('<p class="wc-maya-ok"></p>').text(summary))
+              .append(
+                $("<pre></pre>").text(
+                  JSON.stringify(response.data.body, null, 2),
+                ),
+              );
+            return;
+          }
+          const message =
+            response && response.data && response.data.message
+              ? response.data.message
+              : wcMayaAdmin.i18n.unexpectedResponse;
+          $result
+            .empty()
+            .append($('<p class="wc-maya-error"></p>').text(message));
+        })
+        .fail(function (xhr) {
+          const message =
+            xhr &&
+            xhr.responseJSON &&
+            xhr.responseJSON.data &&
+            xhr.responseJSON.data.message
+              ? xhr.responseJSON.data.message
+              : xhr.statusText || wcMayaAdmin.i18n.unexpectedResponse;
+          $result
+            .empty()
+            .append($('<p class="wc-maya-error"></p>').text(message));
+        })
+        .always(function () {
+          $spinner.removeClass("is-active");
+          $btn.prop("disabled", false);
+        });
+    });
+  }
+
   function attachCopyButton() {
     const $btn = $("#wc-maya-copy-webhook-url");
 
@@ -185,6 +256,7 @@
   $(function () {
     attachKeyToggles();
     attachTestConnection();
+    attachSimulator();
     attachCopyButton();
   });
 })(jQuery);

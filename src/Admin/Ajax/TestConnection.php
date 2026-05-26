@@ -69,11 +69,13 @@ class TestConnection
             $client = $gateway->build_api_client();
         }
 
-        wp_send_json_success([
-            'public_key'  => self::probe_public_key($client),
-            'secret_key'  => self::probe_secret_key($client),
-            'environment' => $client->is_sandbox() ? 'sandbox' : 'production',
-        ]);
+        wp_send_json_success(
+            [
+                'public_key'  => self::probe_public_key($client),
+                'secret_key'  => self::probe_secret_key($client),
+                'environment' => $client->is_sandbox() ? 'sandbox' : 'production',
+            ],
+        );
     }
 
     /**

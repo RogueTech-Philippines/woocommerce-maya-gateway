@@ -26,8 +26,8 @@ test('from_array defaults currency to PHP when omitted', function (): void {
 });
 
 test('to_array round-trips the value and currency', function (): void {
-    $original  = new Money(199.99, 'PHP');
-    $reparsed  = Money::from_array($original->to_array());
+    $original = new Money(199.99, 'PHP');
+    $reparsed = Money::from_array($original->to_array());
 
     expect($reparsed->value)->toBe(199.99)
         ->and($reparsed->currency)->toBe('PHP');

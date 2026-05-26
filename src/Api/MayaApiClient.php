@@ -62,10 +62,10 @@ class MayaApiClient
     /**
      * Issue a JSON request against the Maya REST API.
      *
-     * @param 'GET'|'POST'|'PUT'|'DELETE'  $method  HTTP method.
-     * @param string                       $path    Path beginning with `/`.
-     * @param array<string,mixed>|null     $body    JSON body, omitted when null.
-     * @param self::KEY_*                  $key     Which API key to authenticate with.
+     * @param 'GET'|'POST'|'PUT'|'DELETE' $method  HTTP method.
+     * @param string                      $path    Path beginning with `/`.
+     * @param array<string,mixed>|null    $body    JSON body, omitted when null.
+     * @param self::KEY_*                 $key     Which API key to authenticate with.
      *
      * @return array<string,mixed>|array<int,mixed>|WP_Error
      */
@@ -152,7 +152,14 @@ class MayaApiClient
             [ 'body' => $decoded ],
         );
 
-        return new WP_Error('wc_maya_http_' . $status, $message, [ 'status' => $status, 'body' => $decoded ]);
+        return new WP_Error(
+            'wc_maya_http_' . $status,
+            $message,
+            [
+                'status' => $status,
+                'body'   => $decoded,
+            ],
+        );
     }
 
     /**
@@ -182,7 +189,7 @@ class MayaApiClient
             if (! is_array($param)) {
                 continue;
             }
-            $field       = isset($param['field']) && is_string($param['field']) ? $param['field'] : '';
+            $field       = isset($param['field'])       && is_string($param['field']) ? $param['field'] : '';
             $description = isset($param['description']) && is_string($param['description']) ? $param['description'] : '';
             if ('' !== $field && '' !== $description) {
                 $details[] = $field . ': ' . $description;

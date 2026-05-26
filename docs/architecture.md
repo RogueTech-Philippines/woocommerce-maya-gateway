@@ -13,7 +13,8 @@ src/
 │   ├── FormFields.php               # WC_Settings_API form_fields array
 │   ├── FieldRenderers.php           # generate_<type>_html implementations + validators
 │   └── Ajax/
-│       └── TestConnection.php       # AJAX handler; orchestrates the two probes
+│       ├── TestConnection.php       # AJAX handler; orchestrates the two probes
+│       └── SimulateWebhook.php      # AJAX handler; POSTs a forged payload at our own webhook endpoint
 ├── Api/
 │   ├── MayaApiClient.php            # HTTP transport: Basic auth, JSON I/O, logging
 │   └── Endpoints/                   # typed wrappers, one class per logical endpoint group
@@ -33,7 +34,13 @@ src/
 │   ├── PaymentRecord.php            # /payments/v1/payment-rrns/{rrn} item wrapper
 │   └── WebhookEvent.php             # enum of Maya event names + classification helpers
 └── Webhook/
-    └── WebhookHandler.php           # routes woocommerce_api_maya_webhook hits
+    ├── WebhookHandler.php           # REST /wp-json/wc-maya/v1/webhook + wc-api shim; shared process()
+    ├── PublicKeyBundle.php          # Maya's sandbox + production RSA public keys
+    ├── PayloadFlattener.php         # canonical key.subkey=value flatten + sort + nonce suffix
+    ├── SignatureVerifier.php        # RSA-SHA256 against PublicKeyBundle
+    ├── TimestampVerifier.php        # ±300s freshness check (epoch-ms)
+    ├── IpAllowlist.php              # 4 Maya outbound IPs + source-IP discovery
+    └── Simulator.php                # local-dev forged-payload poster with bypass header
 ```
 
 ## "Which file do I open?"
@@ -52,6 +59,10 @@ src/
 | Change how a Maya event maps to a WC order | [src/Webhook/WebhookHandler.php](../src/Webhook/WebhookHandler.php) |
 | Adjust what gets logged | [src/Util/Logger.php](../src/Util/Logger.php) (levels) or [src/Api/MayaApiClient.php](../src/Api/MayaApiClient.php) (call sites) |
 | Register a new hook | [src/Plugin.php](../src/Plugin.php) (only if cross-cutting) or the owning class's `register()` method |
+| Tweak signature/timestamp/IP checks | [src/Webhook/SignatureVerifier.php](../src/Webhook/SignatureVerifier.php) / [src/Webhook/TimestampVerifier.php](../src/Webhook/TimestampVerifier.php) / [src/Webhook/IpAllowlist.php](../src/Webhook/IpAllowlist.php) |
+| Add or change webhook routing | [src/Webhook/WebhookHandler.php](../src/Webhook/WebhookHandler.php) (`process()` is the shared core) |
+| Rotate Maya's webhook public keys | [src/Webhook/PublicKeyBundle.php](../src/Webhook/PublicKeyBundle.php) |
+| Simulate a webhook locally | "Simulate webhook" button on the gateway settings → [src/Admin/Ajax/SimulateWebhook.php](../src/Admin/Ajax/SimulateWebhook.php) → [src/Webhook/Simulator.php](../src/Webhook/Simulator.php) |
 
 ## Service-registration convention
 
@@ -105,13 +116,47 @@ The gateway reads `SettingsHelper::debug_log_enabled()` for the saved
 preference; the AJAX `TestConnection` handler honors the live checkbox
 state from POST so the toggle works without saving.
 
+## Webhook routing — two entrypoints, one core
+
+`WebhookHandler::register()` wires up two URLs that Maya can call:
+
+| URL                                      | Hook                                              | Why we keep both |
+| ---                                      | ---                                               | --- |
+| `POST /wp-json/wc-maya/v1/webhook`       | `rest_api_init` → `register_rest_route()`         | Primary. Modern WP routing; predictable JSON in/out; what new installs should register. |
+| `POST /?wc-api=maya_webhook`             | `woocommerce_api_maya_webhook` → `handle_wc_api()` | Compatibility shim. Matches the URL shape WC has historically used so migrating merchants don't have to re-register webhooks in the Maya Manager. |
+
+Both entrypoints converge on `WebhookHandler::process()` — a pure(-ish)
+function that takes `(body, headers, source_ip, is_sandbox, logger)` and
+returns `[status, body]`. Unit tests exercise that core directly without
+booting WP_REST_Server, php://input, or the gateway settings option.
+
+## Verification pipeline
+
+Inside `process()`, every (non-simulated) webhook is checked in this order:
+
+1. **Body parses as JSON.** (400 `invalid_body`.)
+2. **Timestamp within ±300s** — `TimestampVerifier` reads epoch-ms from
+   `X-Maya-Webhook-Timestamp`. (401 `stale_timestamp`.)
+3. **Signature verifies** — `SignatureVerifier` flattens via
+   `PayloadFlattener` and runs `openssl_verify(...,
+   'sha256WithRSAEncryption')` against each PEM in `PublicKeyBundle`. (401
+   `invalid_signature`.)
+4. **Source IP in `IpAllowlist`** for the active environment. (403
+   `source_ip_blocked`.)
+5. On success, look up the event via `WebhookEvent::try_from_string` and
+   log the "would dispatch" line. Phase 4 swaps the log line for the real
+   `EventDispatcher` call.
+
+`X-Simulated-Webhook: true` is honored **only in sandbox mode** and short-
+circuits steps 2–4 so a developer can exercise the pipeline without a
+tunnel.
+
 ## What we do NOT split (yet)
 
-- `WebhookHandler` keeps its IP allowlists inline as class constants. Don't
-  extract a `IpAllowlist` class unless the verification grows non-trivial.
-  (This changes in Phase 2 of the rebuild plan.)
 - `MayaGateway::process_payment()` lives in the gateway. Move to a
   `PaymentProcessor` only when it grows beyond a screenful. (Phase 4.)
+- `EventDispatcher` is not yet broken out — `WebhookHandler::process()`
+  only logs the would-be dispatch. (Phase 4.)
 
 ## Adding an endpoint
 
@@ -131,6 +176,7 @@ it's being asked to call.
 
 ```
 tests/Unit/
+├── Admin/Ajax/TestConnectionTest.php
 ├── Api/
 │   ├── MayaApiClientTest.php
 │   └── Endpoints/
@@ -144,7 +190,14 @@ tests/Unit/
 │   ├── MoneyTest.php
 │   ├── PaymentRecordTest.php
 │   └── WebhookEventTest.php
-└── Webhook/WebhookHandlerTest.php
+└── Webhook/
+    ├── IpAllowlistTest.php
+    ├── PayloadFlattenerTest.php
+    ├── PublicKeyBundleTest.php
+    ├── SignatureVerifierTest.php
+    ├── SimulatorTest.php
+    ├── TimestampVerifierTest.php
+    └── WebhookHandlerTest.php
 ```
 
 Pest auto-discovers via `pest()->in('Unit')` in `tests/Pest.php`, so adding

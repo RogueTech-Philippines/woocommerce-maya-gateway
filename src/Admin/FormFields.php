@@ -104,6 +104,10 @@ class FormFields
                 'title' => __('Webhook URL to register', 'wc-maya-gateway'),
                 'type'  => 'webhook_url_display',
             ],
+            'webhook_simulator' => [
+                'title' => __('Simulate webhook (sandbox only)', 'wc-maya-gateway'),
+                'type'  => 'webhook_simulator',
+            ],
         ];
     }
 }
