@@ -1,0 +1,9 @@
+/vendor/
+/node_modules/
+/.phpunit.cache/
+/.php-cs-fixer.cache
+*.log
+.env
+.env.*
+.phpunit.result.cache
+coverage/
