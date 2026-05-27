@@ -34,6 +34,7 @@ function wc_maya_make_order(array $overrides = []): WC_Order
 {
     $defaults = [
         'id'                   => 42,
+        'customer_id'          => 0,
         'total'                => 199.50,
         'currency'             => 'PHP',
         'discount_total'       => 0.0,
@@ -117,6 +118,8 @@ test('build_payload composes Maya-shaped totalAmount, buyer, items, and redirect
         'code'        => '5',
     ]);
     expect($payload['items'][0]['totalAmount'])->toBe([ 'value' => 99.75 ]);
+    // `amount` is the per-unit price (line total / quantity), rounded to 2dp.
+    expect($payload['items'][0]['amount'])->toBe([ 'value' => 49.88 ]);
     expect($payload['requestReferenceNumber'])->toBe('42');
     expect($payload['redirectUrl'])->toMatchArray([
         'success' => 'https://example.test/?wc-api=maya_return&order=42&status=success',
@@ -156,6 +159,71 @@ test('build_payload prefers shipping address over billing when present', functio
     expect($payload['buyer']['shippingAddress']['firstName'])->toBe('Maria');
     expect($payload['buyer']['shippingAddress']['line1'])->toBe('456 Bonifacio');
     expect($payload['buyer']['shippingAddress']['city'])->toBe('Cebu');
+});
+
+test('build_payload includes a well-formed birthday as buyer.birthday', function (): void {
+    $order = wc_maya_make_order();
+
+    $payload = PaymentProcessor::build_payload($order, '42', 'https://example.test/r', AuthorizationType::None, '1990-05-20');
+
+    expect($payload['buyer']['birthday'])->toBe('1990-05-20');
+});
+
+test('build_payload omits buyer.birthday when the date is empty', function (): void {
+    $order = wc_maya_make_order();
+
+    $payload = PaymentProcessor::build_payload($order, '42', 'https://example.test/r');
+
+    expect($payload['buyer'])->not->toHaveKey('birthday');
+});
+
+test('build_payload drops a malformed birthday rather than risking a Maya rejection', function (): void {
+    $order = wc_maya_make_order();
+
+    foreach ([ '1990/05/20', '1990-13-01', '1990-02-30', '90-05-20', 'not-a-date', '1990-5-2' ] as $bad) {
+        $payload = PaymentProcessor::build_payload($order, '42', 'https://example.test/r', AuthorizationType::None, $bad);
+        expect($payload['buyer'])->not->toHaveKey('birthday');
+    }
+});
+
+test('process reads the customer date_of_birth user meta into buyer.birthday', function (): void {
+    $order = wc_maya_make_order([ 'customer_id' => 7 ]);
+    $order->shouldReceive('update_meta_data');
+    $order->shouldReceive('save');
+
+    Functions\when('get_user_meta')->alias(
+        static fn(int $uid, string $key, bool $single): string => 7 === $uid && 'date_of_birth' === $key ? '1990-05-20' : '',
+    );
+
+    $captured = null;
+    $endpoint = Mockery::mock(Checkouts::class);
+    $endpoint->expects('create')->andReturnUsing(function (array $payload) use (&$captured): CheckoutSession {
+        $captured = $payload;
+        return new CheckoutSession('chk_abc', 'https://maya.test/c/abc');
+    });
+
+    $processor = new PaymentProcessor($endpoint, wc_maya_make_settings_helper(), new Logger(false));
+    $processor->process($order);
+
+    expect($captured['buyer']['birthday'])->toBe('1990-05-20');
+});
+
+test('process omits buyer.birthday for guest checkout (no customer account)', function (): void {
+    $order = wc_maya_make_order([ 'customer_id' => 0 ]);
+    $order->shouldReceive('update_meta_data');
+    $order->shouldReceive('save');
+
+    $captured = null;
+    $endpoint = Mockery::mock(Checkouts::class);
+    $endpoint->expects('create')->andReturnUsing(function (array $payload) use (&$captured): CheckoutSession {
+        $captured = $payload;
+        return new CheckoutSession('chk_abc', 'https://maya.test/c/abc');
+    });
+
+    $processor = new PaymentProcessor($endpoint, wc_maya_make_settings_helper(), new Logger(false));
+    $processor->process($order);
+
+    expect($captured['buyer'])->not->toHaveKey('birthday');
 });
 
 test('process persists meta and returns success on a happy-path createCheckout', function (): void {

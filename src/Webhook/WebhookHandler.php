@@ -203,6 +203,14 @@ class WebhookHandler
             $dispatcher = $event_dispatcher_override
                 ?? new EventDispatcher($logger, self::build_payments_endpoint($is_sandbox, $logger));
             $dispatch = $dispatcher->dispatch($event, $payload);
+
+            // Transient-failure retry safety net (Phase 8). The dispatch's
+            // action drives the decision — see {@see RetryQueue::should_schedule}.
+            // Simulator payloads never enter the retry queue (the order ids
+            // are synthesized) so local debugging doesn't pollute the AS table.
+            if (! $is_simulated) {
+                RetryQueue::maybe_schedule($dispatch ?? [], $payload, 1, $logger);
+            }
         }
 
         return [

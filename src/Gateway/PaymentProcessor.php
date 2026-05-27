@@ -31,6 +31,15 @@ use WP_Error;
  */
 class PaymentProcessor
 {
+    /**
+     * User-meta key the customer's date of birth is stored under. Matches the
+     * site's registration / account flow (the theme's
+     * `DateOfBirthValidator::META_KEY`). Referenced as a literal here rather
+     * than importing the theme class so the gateway stays decoupled — the
+     * `wc_maya_buyer_birthday` filter is the supported override point.
+     */
+    public const BUYER_BIRTHDAY_META_KEY = 'date_of_birth';
+
     public function __construct(
         private readonly Checkouts $endpoint,
         private readonly SettingsHelper $settings,
@@ -49,6 +58,7 @@ class PaymentProcessor
             $reference,
             $this->settings->return_url((int) $order->get_id()),
             $authorization,
+            self::resolve_buyer_birthday($order),
         );
 
         $session = $this->endpoint->create($payload);
@@ -99,6 +109,11 @@ class PaymentProcessor
      * capturing immediately. The merchant captures via the order edit screen
      * later (Phase 5's CapturePanel).
      *
+     * `$birthday` (YYYY-MM-DD) is added to the buyer object as Maya's
+     * `buyer.birthday` field when present and well-formed; a malformed value
+     * is dropped rather than risking a Maya validation rejection on the whole
+     * checkout.
+     *
      * @return array<string,mixed>
      */
     public static function build_payload(
@@ -106,6 +121,7 @@ class PaymentProcessor
         string $reference,
         string $return_url_base,
         AuthorizationType $authorization = AuthorizationType::None,
+        string $birthday = '',
     ): array {
         $total    = new Money((float) $order->get_total(), (string) $order->get_currency());
         $shipping = self::shipping_address($order);
@@ -150,11 +166,55 @@ class PaymentProcessor
             'requestReferenceNumber' => $reference,
         ];
 
+        if ('' !== $birthday && self::is_valid_birthday($birthday)) {
+            $payload['buyer']['birthday'] = $birthday;
+        }
+
         if ($authorization->is_manual_capture()) {
             $payload['authorizationType'] = $authorization->for_maya_api();
         }
 
         return $payload;
+    }
+
+    /**
+     * Resolve the buyer's date of birth (YYYY-MM-DD) for Maya's
+     * `buyer.birthday` field.
+     *
+     * Sourced from the customer's {@see BUYER_BIRTHDAY_META_KEY} user meta,
+     * which the site's registration / account flow populates. Empty for guest
+     * checkouts — there is no user account to read it from. The
+     * `wc_maya_buyer_birthday` filter lets a site override the source (e.g. a
+     * guest checkout field, or a different meta key).
+     */
+    private static function resolve_buyer_birthday(WC_Order $order): string
+    {
+        $birthday    = '';
+        $customer_id = (int) $order->get_customer_id();
+
+        if ($customer_id > 0 && function_exists('get_user_meta')) {
+            $birthday = (string) get_user_meta($customer_id, self::BUYER_BIRTHDAY_META_KEY, true);
+        }
+
+        /**
+         * Filter the buyer birthday (YYYY-MM-DD) sent to Maya.
+         *
+         * @param string   $birthday Resolved DOB, '' when unavailable.
+         * @param WC_Order $order    Order being paid.
+         */
+        return (string) apply_filters('wc_maya_buyer_birthday', $birthday, $order);
+    }
+
+    /**
+     * Strict YYYY-MM-DD check (rejects 2026-13-01, 2026-02-30, 2026/02/03,
+     * and any non-ISO shape) so a corrupt value can't fail the checkout.
+     */
+    private static function is_valid_birthday(string $value): bool
+    {
+        if (1 !== preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $m)) {
+            return false;
+        }
+        return checkdate((int) $m[2], (int) $m[3], (int) $m[1]);
     }
 
     /**
@@ -193,12 +253,17 @@ class PaymentProcessor
                 continue;
             }
             $line_total = (float) $item->get_total();
+            $quantity   = max(1, (int) $item->get_quantity());
             $items[]    = [
                 'name'        => (string) $item->get_name(),
                 'description' => (string) $item->get_name(),
-                'quantity'    => (int) $item->get_quantity(),
+                'quantity'    => $quantity,
                 'code'        => (string) ($item->get_product_id() ?: '001'),
-                'amount'      => [ 'value' => $line_total ],
+                // Maya's item schema expects `amount` as the per-unit price and
+                // `totalAmount` as the line total. Derive the unit price from
+                // the line total (rounded to 2 decimals); `totalAmount` and the
+                // top-level `totalAmount` stay authoritative for the charge.
+                'amount'      => [ 'value' => round($line_total / $quantity, 2) ],
                 'totalAmount' => [ 'value' => $line_total ],
             ];
         }

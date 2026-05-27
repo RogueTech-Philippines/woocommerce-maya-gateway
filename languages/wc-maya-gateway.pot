@@ -1,0 +1,590 @@
+# Copyright (C) WooCommerce Maya Gateway
+# This file is distributed under the GPL-3.0 license.
+msgid ""
+msgstr ""
+"Project-Id-Version: WooCommerce Maya Gateway 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/TaniKyuun/woocommerce-maya-gateway/issues\n"
+"POT-Creation-Date: 2026-05-26 08:57+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: bin/make-pot.php (wc-maya-gateway)\n"
+"X-Domain: wc-maya-gateway\n"
+
+#: src/Gateway/MayaGateway.php:238
+msgid "%d webhook registered with Maya."
+msgid_plural "%d webhooks registered with Maya."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/AdminAssets.php:68
+msgid "%d webhook(s) registered with Maya for this account."
+msgstr ""
+
+#: src/Admin/FormFields.php:49
+msgid "API credentials"
+msgstr ""
+
+#: src/Gateway/MayaGateway.php:48
+msgid "Accept payments via Maya (cards, e-wallets, QR Ph)."
+msgstr ""
+
+#: templates/admin/capture-panel.php:36
+msgid "Amount to capture:"
+msgstr ""
+
+#: templates/admin/capture-panel.php:22
+msgid "Authorization:"
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:176
+msgid "Authorized-but-uncaptured Maya payments can only be voided in full."
+msgstr ""
+
+#: templates/admin/capture-panel.php:26
+msgid "Authorized:"
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:143
+msgid "Callback URL"
+msgstr ""
+
+#: src/Webhook/Registrar.php:72
+msgid "Cannot register webhooks against an empty callback URL."
+msgstr ""
+
+#: templates/admin/capture-panel.php:48
+msgid "Capture"
+msgstr ""
+
+#: src/Admin/OrderActions/CaptureButton.php:45
+msgid "Capture Maya payment"
+msgstr ""
+
+#: src/Gateway/CaptureProcessor.php:97
+msgid "Capture amount %1$s exceeds the remaining capturable balance %2$s."
+msgstr ""
+
+#: src/Gateway/CaptureProcessor.php:64
+msgid "Capture amount must be greater than zero."
+msgstr ""
+
+#: src/Admin/AdminAssets.php:79
+msgid "Capture submitted. Webhook will confirm the new balance."
+msgstr ""
+
+#: templates/admin/capture-panel.php:28
+msgid "Captured:"
+msgstr ""
+
+#: src/Admin/AdminAssets.php:78
+msgid "Capturing…"
+msgstr ""
+
+#: src/Admin/AdminAssets.php:67
+msgid "Checkout session created (id %s) — no payment was taken."
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:243
+msgid "Context"
+msgstr ""
+
+#: src/Admin/AdminAssets.php:63
+msgid "Copied!"
+msgstr ""
+
+#: src/Admin/AdminAssets.php:64
+#: src/Admin/FieldRenderers.php:101
+msgid "Copy"
+msgstr ""
+
+#: src/Gateway/MayaGateway.php:161
+msgid "Could not load order #%d for refund."
+msgstr ""
+
+#: src/Gateway/MayaGateway.php:124
+#: src/Admin/Ajax/CapturePayment.php:60
+msgid "Could not load order #%d."
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:144
+msgid "Created"
+msgstr ""
+
+#: src/Gateway/ReturnHandler.php:68
+msgid "Customer returned from Maya checkout. Awaiting webhook confirmation."
+msgstr ""
+
+#: src/Admin/FormFields.php:83
+msgid "Debug log"
+msgstr ""
+
+#: src/Admin/FormFields.php:43
+msgid "Description"
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:199
+msgid "Disabled — the simulator is sandbox-only. Toggle \"Sandbox mode\" above to enable it."
+msgstr ""
+
+#: src/Admin/FormFields.php:30
+msgid "Enable / Disable"
+msgstr ""
+
+#: src/Admin/FormFields.php:32
+msgid "Enable Maya Checkout"
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:142
+msgid "Event"
+msgstr ""
+
+#: src/Admin/AdminAssets.php:76
+msgid "External — left alone on save"
+msgstr ""
+
+#: src/Admin/FormFields.php:96
+msgid "FINAL — authorize for the final amount only (no partial captures)"
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:109
+msgid "Falling back to home_url(). Set the local-dev webhook URL above to point Maya at a tunnel instead."
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:218
+msgid "Filter"
+msgstr ""
+
+#: templates/admin/capture-panel.php:54
+msgid "Final order completion still waits for the Maya PAYMENT_SUCCESS webhook — this just posts the capture call. Partial captures update the remaining balance; capturing the full remainder triggers the order to complete once the webhook arrives."
+msgstr ""
+
+#: src/Admin/FormFields.php:51
+msgid "Get your keys from the Maya Manager → Developers section. Sandbox shared keys are documented at developers.maya.ph."
+msgstr ""
+
+#: src/Admin/AdminAssets.php:61
+msgid "Hide"
+msgstr ""
+
+#: src/Admin/Ajax/TestConnection.php:51
+#: src/Admin/Ajax/CapturePayment.php:42
+#: src/Admin/Ajax/RefreshWebhooks.php:39
+#: src/Admin/Ajax/SimulateWebhook.php:40
+msgid "Insufficient permissions."
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:241
+msgid "Level"
+msgstr ""
+
+#: src/Admin/AdminAssets.php:77
+#: src/Admin/FieldRenderers.php:150
+msgid "Loading…"
+msgstr ""
+
+#: src/Admin/FormFields.php:109
+msgid "Local dev webhook URL"
+msgstr ""
+
+#: src/Admin/FormFields.php:85
+msgid "Log API requests and responses"
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:205
+msgid "Log file:"
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:145
+msgid "Managed"
+msgstr ""
+
+#: src/Admin/AdminAssets.php:75
+msgid "Managed by this plugin"
+msgstr ""
+
+#: src/Admin/FormFields.php:90
+msgid "Manual capture"
+msgstr ""
+
+#: src/Blocks/MayaBlocksPaymentMethod.php:123
+#: src/Admin/FormFields.php:39
+msgid "Maya"
+msgstr ""
+
+#: src/Api/MayaApiClient.php:144
+msgid "Maya API returned HTTP %d."
+msgstr ""
+
+#: src/Gateway/MayaGateway.php:47
+msgid "Maya Checkout"
+msgstr ""
+
+#: src/Admin/FormFields.php:73
+msgid "Maya Checkout secret key (pair of the public key above). Used to manage webhooks at /checkout/v1/webhooks. Note: the Payment Vault product has separate keys at /payments/v1/* and is not used here. Never expose this on the frontend."
+msgstr ""
+
+#: src/Webhook/EventDispatcher.php:136
+msgid "Maya PAYMENT_SUCCESS webhook arrived with a mismatched amount (expected %1$s, received %2$s). Order state left unchanged for manual review."
+msgstr ""
+
+#: src/Webhook/EventDispatcher.php:317
+msgid "Maya authorization failed."
+msgstr ""
+
+#: src/Webhook/EventDispatcher.php:295
+msgid "Maya authorized the payment. Use the Capture panel on this order to capture funds."
+msgstr ""
+
+#: templates/admin/capture-panel.php:18
+msgid "Maya capture"
+msgstr ""
+
+#: src/Gateway/CaptureProcessor.php:136
+msgid "Maya capture response did not include capturedAmount. Refresh the order page to re-fetch the current balance from Maya."
+msgstr ""
+
+#: src/Gateway/CaptureProcessor.php:145
+msgid "Maya capture: %1$s captured (total captured %2$s of %3$s authorized)."
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:127
+msgid "Maya does not allow partial voids — refund the full amount or wait for capture to enable partial refunds."
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:275
+msgid "Maya does not allow partial voids; cannot split refund across captured payments."
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:49
+#: src/Admin/EventLog/EventLogPage.php:192
+msgid "Maya events"
+msgstr ""
+
+#: src/Admin/Ajax/TestConnection.php:66
+#: src/Admin/Ajax/CapturePayment.php:70
+#: src/Admin/Ajax/RefreshWebhooks.php:46
+#: src/Admin/Ajax/SimulateWebhook.php:74
+msgid "Maya gateway not registered."
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:170
+msgid "Maya no longer permits voiding this authorization (it likely expired or was captured)."
+msgstr ""
+
+#: src/Webhook/EventDispatcher.php:247
+msgid "Maya partial capture confirmed: %1$s of %2$s captured. Order will complete when the remaining balance is captured."
+msgstr ""
+
+#: src/Webhook/EventDispatcher.php:316
+msgid "Maya payment expired."
+msgstr ""
+
+#: src/Webhook/EventDispatcher.php:318
+msgid "Maya payment failed."
+msgstr ""
+
+#: src/Admin/FormFields.php:106
+msgid "Maya posts payment status updates to the URL below. Register it in the Maya Manager → Webhooks section (or via the API)."
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:413
+msgid "Maya refund %1$s on payment %2$s (refund id %3$s, reason: %4$s)."
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:354
+msgid "Maya refund partially failed at %1$s: %2$s. Check the Maya dashboard for the authoritative state."
+msgstr ""
+
+#: src/Gateway/ReturnHandler.php:55
+msgid "Maya reported the payment did not complete. Please try again."
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:135
+msgid "Maya reports the payment cannot be refunded at this time."
+msgstr ""
+
+#: src/Admin/FormFields.php:99
+msgid "Maya supports authorize-now, capture-later flows. Choose anything other than \"None\" to expose a Capture panel on the order edit screen."
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:382
+msgid "Maya void succeeded for payment %1$s (reason: %2$s)."
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:394
+msgid "Merchant-initiated refund via WooCommerce"
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:370
+msgid "Merchant-initiated void via WooCommerce"
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:242
+msgid "Message"
+msgstr ""
+
+#: src/Api/MayaApiClient.php:81
+msgid "Missing %s API key."
+msgstr ""
+
+#: src/Admin/FormFields.php:95
+msgid "NORMAL — authorize at checkout, capture later (full amount)"
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:160
+msgid "No AUTHORIZED Maya payment was found for this order."
+msgstr ""
+
+#: src/Gateway/CaptureProcessor.php:83
+msgid "No AUTHORIZED payment with remaining capturable balance was found for this order."
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:196
+msgid "No Maya log files yet. Enable Debug log on the Maya settings screen to start capturing events."
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:112
+msgid "No completed Maya payment was found to refund against."
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:234
+msgid "No entries match the current filter."
+msgstr ""
+
+#: src/Admin/AdminAssets.php:74
+msgid "No webhooks registered with Maya for this account."
+msgstr ""
+
+#: src/Admin/FormFields.php:94
+msgid "None — auto-capture at checkout (recommended)"
+msgstr ""
+
+#: src/Admin/FormFields.php:112
+msgid "Optional. When running locally behind ngrok / cloudflared, paste the public tunnel URL here. Leave blank to use this site's home URL. Paste either the bare host or the full webhook URL — the path is appended automatically."
+msgstr ""
+
+#: src/Admin/Ajax/SimulateWebhook.php:64
+msgid "Order #%d was not found (or is not a regular order — refunds are not simulatable)."
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:204
+msgid "Order ID"
+msgstr ""
+
+#: src/Admin/Ajax/CapturePayment.php:51
+msgid "Order id is required."
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:219
+msgid "PAYMENT_EXPIRED"
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:218
+msgid "PAYMENT_FAILED"
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:217
+msgid "PAYMENT_SUCCESS"
+msgstr ""
+
+#: src/Admin/FormFields.php:97
+msgid "PREAUTHORIZATION — authorize, then capture in one or more pieces"
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:193
+msgid "Parsed view of the wc-maya-gateway log channel. Lines that do not match the expected format are skipped."
+msgstr ""
+
+#: src/Admin/FormFields.php:45
+msgid "Pay securely via Maya."
+msgstr ""
+
+#: src/Admin/Ajax/SimulateWebhook.php:53
+msgid "Pick a valid simulator status."
+msgstr ""
+
+#: src/Admin/Ajax/SimulateWebhook.php:49
+msgid "Provide an order ID to simulate against."
+msgstr ""
+
+#: src/Admin/FormFields.php:61
+#: src/Admin/AdminAssets.php:65
+msgid "Public key"
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:57
+msgid "Public key: creates a tiny sandbox checkout session (POST /checkout/v1/checkouts). The session is never visited and expires on its own — no card is charged. Secret key: lists registered Checkout webhooks (GET /checkout/v1/webhooks). Both calls are logged to WooCommerce → Status → Logs (source: wc-maya-gateway)."
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:161
+msgid "Refresh from Maya"
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:299
+msgid "Refund amount exceeds the available refundable balance across all captured Maya payments (%s remaining unmatched)."
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:71
+msgid "Refund amount must be greater than zero."
+msgstr ""
+
+#: src/Gateway/RefundProcessor.php:335
+msgid "Refund planner produced no actions to execute."
+msgstr ""
+
+#: src/Admin/FormFields.php:121
+msgid "Registered webhooks (live)"
+msgstr ""
+
+#: templates/admin/capture-panel.php:30
+msgid "Remaining:"
+msgstr ""
+
+#: src/Admin/FormFields.php:57
+msgid "Sandbox base URL: https://pg-sandbox.paymaya.com — Production: https://pg.maya.ph"
+msgstr ""
+
+#: src/Admin/FormFields.php:54
+msgid "Sandbox mode"
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:107
+msgid "Save the form first if you just changed it — this URL is rendered from saved settings."
+msgstr ""
+
+#: src/Gateway/MayaGateway.php:202
+msgid "Saved. Add both Maya API keys to register webhooks automatically."
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:166
+msgid "Saving the form (with both API keys set) deletes any of our managed events and re-registers them pointing at the URL above. Other webhooks the merchant registered for unrelated purposes are left alone."
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:215
+msgid "Search:"
+msgstr ""
+
+#: src/Admin/FormFields.php:70
+#: src/Admin/AdminAssets.php:66
+msgid "Secret key"
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:233
+msgid "Sends a forged Maya payload to this site's webhook endpoint with the X-Simulated-Webhook bypass header. The receiver still parses + logs the event; no Maya account is touched. Check WooCommerce → Status → Logs (source: wc-maya-gateway) to see what would have been dispatched."
+msgstr ""
+
+#: src/Admin/AdminAssets.php:60
+msgid "Show"
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:227
+msgid "Simulate webhook"
+msgstr ""
+
+#: src/Admin/FormFields.php:125
+msgid "Simulate webhook (sandbox only)"
+msgstr ""
+
+#: src/Webhook/Simulator.php:54
+msgid "Simulator can only run in sandbox mode."
+msgstr ""
+
+#: src/Admin/Ajax/SimulateWebhook.php:83
+msgid "Simulator is sandbox-only. Enable \"Sandbox mode\" to use it."
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:214
+msgid "Status"
+msgstr ""
+
+#: src/Admin/FormFields.php:79
+#: src/Admin/FieldRenderers.php:52
+msgid "Test connection"
+msgstr ""
+
+#: src/Admin/AdminAssets.php:70
+msgid "Testing against production (pg.maya.ph)."
+msgstr ""
+
+#: src/Admin/AdminAssets.php:69
+msgid "Testing against sandbox (pg-sandbox.paymaya.com)."
+msgstr ""
+
+#: src/Admin/AdminAssets.php:62
+msgid "Testing…"
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:240
+msgid "Timestamp"
+msgstr ""
+
+#: src/Admin/FormFields.php:36
+msgid "Title"
+msgstr ""
+
+#: src/Admin/FormFields.php:38
+msgid "Title shown to customers during checkout."
+msgstr ""
+
+#: src/Gateway/PaymentProcessor.php:66
+msgid "Unable to start the Maya payment: %s"
+msgstr ""
+
+#: src/Admin/AdminAssets.php:71
+msgid "Unexpected response from the server."
+msgstr ""
+
+#: src/Webhook/Simulator.php:63
+msgid "Unsupported simulator status \"%s\"."
+msgstr ""
+
+#: src/Admin/FormFields.php:56
+msgid "Use the Maya sandbox environment for testing."
+msgstr ""
+
+#: src/Admin/FormFields.php:64
+msgid "Used to create checkout sessions (POST /checkout/v1/checkouts)."
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:106
+msgid "Using local-dev override."
+msgstr ""
+
+#: src/Admin/FormFields.php:117
+msgid "Webhook URL to register"
+msgstr ""
+
+#: src/Gateway/MayaGateway.php:217
+msgid "Webhook registration failed: %s"
+msgstr ""
+
+#: src/Gateway/MayaGateway.php:228
+msgid "Webhook registration partially succeeded — %1$d created; errors: %2$s"
+msgstr ""
+
+#: src/Admin/FormFields.php:104
+msgid "Webhooks"
+msgstr ""
+
+#: src/Plugin.php:90
+msgid "WooCommerce Maya Gateway requires WooCommerce to be installed and active."
+msgstr ""
+
+#: src/Admin/FormFields.php:86
+msgid "Writes to WooCommerce → Status → Logs (source: wc-maya-gateway). Warnings and errors are always logged; enable this to also capture successful requests and full response bodies. Disable in production."
+msgstr ""
+
+#: src/Admin/EventLog/EventLogPage.php:56
+msgid "You do not have permission to view this page."
+msgstr ""
+
+#: src/Admin/AdminAssets.php:72
+msgid "handler accepted (would dispatch event)"
+msgstr ""
+
+#: src/Admin/AdminAssets.php:73
+msgid "handler rejected (see body for reason)"
+msgstr ""
+

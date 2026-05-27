@@ -15,11 +15,13 @@ use TaniKyuun\MayaGateway\Admin\Ajax\CapturePayment;
 use TaniKyuun\MayaGateway\Admin\Ajax\RefreshWebhooks;
 use TaniKyuun\MayaGateway\Admin\Ajax\SimulateWebhook;
 use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
+use TaniKyuun\MayaGateway\Admin\EventLog\EventLogPage;
 use TaniKyuun\MayaGateway\Admin\OrderActions\CaptureButton;
 use TaniKyuun\MayaGateway\Admin\OrderActions\CapturePanel;
 use TaniKyuun\MayaGateway\Blocks\MayaBlocksPaymentMethod;
 use TaniKyuun\MayaGateway\Gateway\MayaGateway;
 use TaniKyuun\MayaGateway\Gateway\ReturnHandler;
+use TaniKyuun\MayaGateway\Webhook\RetryQueue;
 use TaniKyuun\MayaGateway\Webhook\WebhookHandler;
 
 /**
@@ -49,6 +51,27 @@ class Plugin
         WebhookHandler::register();
         ReturnHandler::register();
         MayaBlocksPaymentMethod::register();
+        EventLogPage::register();
+        RetryQueue::register();
+
+        self::load_textdomain();
+    }
+
+    /**
+     * Loads the bundled translation files (.mo) shipped under
+     * `languages/`. WP applies any user-installed translations from
+     * `wp-content/languages/plugins/wc-maya-gateway-*.mo` automatically;
+     * the call here is only needed for the bundled-default lookup so
+     * that a fresh install without WP.org-hosted translations still
+     * picks up our shipped strings.
+     */
+    private static function load_textdomain(): void
+    {
+        load_plugin_textdomain(
+            'wc-maya-gateway',
+            false,
+            dirname(plugin_basename(WC_MAYA_PLUGIN_FILE)) . '/languages',
+        );
     }
 
     /**

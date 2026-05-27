@@ -27,13 +27,27 @@ class Logger
 {
     public const SOURCE = 'wc-maya-gateway';
 
-    /** @var list<string> */
+    /**
+     * Keys whose values are replaced with `[redacted]` before a context array
+     * is written. Two classes:
+     *
+     *  - Secrets: `authorization`, `*_key`, `secret` — must never hit disk.
+     *  - Buyer PII: `buyer` — the createCheckout request body nests the
+     *    customer's name, contact, and addresses under this key. Redacting the
+     *    whole subtree keeps personal data out of shareable log files (PH Data
+     *    Privacy Act / GDPR). Maya's validation errors echo the offending
+     *    field in the *response* (see MayaApiClient::format_parameter_details),
+     *    so redacting the request copy doesn't hurt debuggability.
+     *
+     * @var list<string>
+     */
     private const REDACT_KEYS = [
         'authorization',
         'secret_key',
         'public_key',
         'api_key',
         'secret',
+        'buyer',
     ];
 
     public function __construct(private readonly bool $debug_enabled = false) {}

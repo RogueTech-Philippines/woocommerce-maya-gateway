@@ -1,5 +1,6 @@
 /vendor/
 /node_modules/
+/dist/
 /.phpunit.cache/
 /.php-cs-fixer.cache
 *.log

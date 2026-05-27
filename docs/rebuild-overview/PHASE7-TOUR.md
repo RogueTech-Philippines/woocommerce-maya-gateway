@@ -342,6 +342,8 @@ If Maya doesn't appear in the block checkout, check in this order:
 - [../REBUILD_PLAN.md](../REBUILD_PLAN.md) — master plan; Phase 8 closes
   out with i18n, audit-log viewer, Action Scheduler retries, Playwright
   browser tests, and the release zip.
+- [PHASE8-TOUR.md](PHASE8-TOUR.md) — next phase: polish + release
+  (observability, retry safety net, .pot, release-zip builder).
 - [../architecture.md](../architecture.md) — updated file map and the
   "Block-based Cart and Checkout" flow diagram.
 - [PHASE4-TOUR.md](PHASE4-TOUR.md) — payment processing (the classic

@@ -26,11 +26,12 @@ beforeEach(function (): void {
     Functions\when('__')->alias(static fn(string $text, string $domain = ''): string => $text);
 });
 
-function wc_maya_mock_order(int $id, float $total, bool $is_paid = false, string $auth_type = 'none'): WC_Order
+function wc_maya_mock_order(int $id, float $total, bool $is_paid = false, string $auth_type = 'none', string $currency = 'PHP'): WC_Order
 {
     $order = Mockery::mock(WC_Order::class);
     $order->shouldReceive('get_id')->andReturn($id);
     $order->shouldReceive('get_total')->andReturn($total);
+    $order->shouldReceive('get_currency')->andReturn($currency);
     $order->shouldReceive('is_paid')->andReturn($is_paid);
     $order->shouldReceive('get_meta')
         ->with(MayaGateway::META_AUTHORIZATION_TYPE)
@@ -81,6 +82,51 @@ test('PAYMENT_SUCCESS with amount mismatch logs + adds note, leaves order alone'
         'expected' => 199.5,
         'received' => 50.0,
     ]);
+});
+
+test('PAYMENT_SUCCESS with matching amount but mismatched currency leaves order alone', function (): void {
+    $order = wc_maya_mock_order(42, 199.5, currency: 'PHP');
+    $order->shouldNotReceive('payment_complete');
+    $order->shouldNotReceive('update_status');
+    $order->shouldReceive('add_order_note')->once();
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    $result = (new EventDispatcher(new Logger(false)))->dispatch(
+        WebhookEvent::PaymentSuccess,
+        [
+            'id'                     => 'pay_abc',
+            'amount'                 => 199.5,
+            'currency'               => 'USD', // right number, wrong currency
+            'requestReferenceNumber' => '42',
+        ],
+    );
+
+    expect($result)->toMatchArray([
+        'action'            => 'amount_mismatch',
+        'order_id'          => 42,
+        'expected_currency' => 'PHP',
+        'received_currency' => 'USD',
+    ]);
+});
+
+test('PAYMENT_SUCCESS with matching currency completes normally', function (): void {
+    $order = wc_maya_mock_order(42, 199.5, currency: 'PHP');
+    $order->shouldReceive('payment_complete')->with('pay_abc')->once();
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    $result = (new EventDispatcher(new Logger(false)))->dispatch(
+        WebhookEvent::PaymentSuccess,
+        [
+            'id'                     => 'pay_abc',
+            'amount'                 => 199.5,
+            'currency'               => 'php', // case-insensitive match
+            'requestReferenceNumber' => '42',
+        ],
+    );
+
+    expect($result['action'])->toBe('payment_complete');
 });
 
 test('PAYMENT_FAILED maps to update_status(failed)', function (): void {

@@ -125,23 +125,43 @@ class EventDispatcher
         $expected = (float) $order->get_total();
         $received = (float) ($payload['amount'] ?? 0);
 
-        if (abs($expected - $received) >= self::AMOUNT_TOLERANCE) {
-            $this->logger->error('EventDispatcher: amount mismatch — leaving order alone.', [
-                'order_id' => $order->get_id(),
-                'expected' => $expected,
-                'received' => $received,
+        // Currency must match too: a webhook with the right number but a
+        // different currency (e.g. order in PHP, payload says USD) would
+        // otherwise complete the order at a wrong real value. Maya is
+        // PHP-only today, but this is cheap defense-in-depth. When the
+        // payload omits currency we fall back to the order's so legitimate
+        // currency-less payloads aren't rejected.
+        $expected_currency = strtoupper((string) $order->get_currency());
+        $received_currency = isset($payload['currency']) && is_string($payload['currency']) && '' !== $payload['currency']
+            ? strtoupper($payload['currency'])
+            : $expected_currency;
+
+        $amount_matches   = abs($expected - $received) < self::AMOUNT_TOLERANCE;
+        $currency_matches = $expected_currency === $received_currency;
+
+        if (! $amount_matches || ! $currency_matches) {
+            $this->logger->error('EventDispatcher: amount/currency mismatch — leaving order alone.', [
+                'order_id'          => $order->get_id(),
+                'expected'          => $expected,
+                'received'          => $received,
+                'expected_currency' => $expected_currency,
+                'received_currency' => $received_currency,
             ]);
             $order->add_order_note(sprintf(
-                /* translators: 1: expected amount, 2: received amount. */
-                __('Maya PAYMENT_SUCCESS webhook arrived with a mismatched amount (expected %1$s, received %2$s). Order state left unchanged for manual review.', 'wc-maya-gateway'),
+                /* translators: 1: expected amount, 2: received amount, 3: expected currency, 4: received currency. */
+                __('Maya PAYMENT_SUCCESS webhook arrived with a mismatched amount/currency (expected %1$s %3$s, received %2$s %4$s). Order state left unchanged for manual review.', 'wc-maya-gateway'),
                 $expected,
                 $received,
+                $expected_currency,
+                $received_currency,
             ));
             return [
-                'action'   => 'amount_mismatch',
-                'order_id' => (int) $order->get_id(),
-                'expected' => $expected,
-                'received' => $received,
+                'action'            => 'amount_mismatch',
+                'order_id'          => (int) $order->get_id(),
+                'expected'          => $expected,
+                'received'          => $received,
+                'expected_currency' => $expected_currency,
+                'received_currency' => $received_currency,
             ];
         }
 

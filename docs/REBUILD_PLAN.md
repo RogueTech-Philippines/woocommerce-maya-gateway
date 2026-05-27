@@ -13,7 +13,7 @@ The current plugin is a clean scaffold. The old plugin (`wc-maya-payment-gateway
 | 5 | Manual capture | ✅ Done (2026-05-26) | [rebuild-overview/PHASE5-TOUR.md](rebuild-overview/PHASE5-TOUR.md) |
 | 6 | Refund + void | ✅ Done (2026-05-26) | [rebuild-overview/PHASE6-TOUR.md](rebuild-overview/PHASE6-TOUR.md) |
 | 7 | WC Blocks support | ✅ Done (2026-05-26) | [rebuild-overview/PHASE7-TOUR.md](rebuild-overview/PHASE7-TOUR.md) |
-| 8 | Polish + release | ⏳ Pending | — |
+| 8 | Polish + release | ✅ Done (2026-05-26) | [rebuild-overview/PHASE8-TOUR.md](rebuild-overview/PHASE8-TOUR.md) |
 
 ## Per-phase tour-doc convention
 
@@ -277,7 +277,7 @@ redirected after "Place order". `cart_checkout_blocks` compatibility is
 declared alongside HPOS in the main plugin file. Full walkthrough:
 [rebuild-overview/PHASE7-TOUR.md](rebuild-overview/PHASE7-TOUR.md).
 
-### Phase 8 — Polish, observability, release
+### Phase 8 — Polish, observability, release ✅ Done
 
 - Extract all strings via `wp i18n make-pot` → ship `languages/wc-maya-gateway.pot`.
 - Admin "Event log" viewer (a custom WC Status Tools tab) showing parsed webhook events with timestamps, signature-valid flag, dispatched action. Reads from a dedicated WC log channel.
@@ -287,6 +287,25 @@ declared alongside HPOS in the main plugin file. Full walkthrough:
 - Retire old plugin: archive the repo, drop a redirect notice.
 
 **DoD:** Production-installable build (composer-less zip), translatable, with audit log.
+
+**Delivered:** 212 tests passing (was 182 → +30), 661 assertions, lint
+clean. New `Admin/EventLog/EventLogParser` (pure-static WC log-line
+parser) + `EventLogPage` (custom "Maya events" tab under WooCommerce →
+Status with file picker, level filters, free-text search). New
+`Webhook/RetryQueue` — Action Scheduler-backed safety net that replays
+verified-but-undeliverable webhooks for transient dispatch failures
+(`order_not_found`, `manual_capture_lookup_failed`,
+`manual_capture_lookup_unavailable`) with exponential backoff
+(1m / 4m / 16m / 64m) capped at 4 attempts. New `bin/make-pot.php`
+self-contained POT generator → `languages/wc-maya-gateway.pot` (139
+unique strings). New `bin/build-release.sh` composer-less zip builder
+that stages a no-dev `vendor/` and strips dev-only files. New
+`CHANGELOG.md`; README expanded with install, configuration table, and
+developer workflow. `Plugin::init()` loads the bundled text domain.
+Playwright browser tests + legacy-plugin retirement deliberately
+deferred (separate Node-toolchain effort and a meta-repo concern,
+respectively — both documented in the tour). Full walkthrough:
+[rebuild-overview/PHASE8-TOUR.md](rebuild-overview/PHASE8-TOUR.md).
 
 ## Anti-patterns from the old plugin to NOT carry forward
 

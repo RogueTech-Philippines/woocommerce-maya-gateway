@@ -17,6 +17,9 @@ src/
 │   │   ├── SimulateWebhook.php      # AJAX handler; POSTs a forged payload at our own webhook endpoint
 │   │   ├── RefreshWebhooks.php      # AJAX handler; re-fetches Maya's registered webhooks for the status table
 │   │   └── CapturePayment.php       # AJAX handler; thin wrapper over CaptureProcessor
+│   ├── EventLog/
+│   │   ├── EventLogParser.php      # pure-static WC log-line parser (Phase 8)
+│   │   └── EventLogPage.php        # custom "Maya events" tab under WC → Status (Phase 8)
 │   └── OrderActions/
 │       ├── CaptureButton.php        # Capture button beside Refund on the order-edit screen
 │       └── CapturePanel.php         # capture form panel rendered below the order totals
@@ -56,7 +59,18 @@ src/
     ├── IpAllowlist.php              # 4 Maya outbound IPs + source-IP discovery
     ├── Registrar.php                # idempotent reconcile: delete managed set → create five fresh
     ├── EventDispatcher.php          # verified event → WC order state change (Phase 4)
+    ├── RetryQueue.php               # Action Scheduler-backed safety net for transient dispatch failures (Phase 8)
     └── Simulator.php                # local-dev forged-payload poster with bypass header
+```
+
+Tooling and translation files:
+
+```
+bin/
+├── make-pot.php                     # self-contained .pot extractor (Phase 8)
+└── build-release.sh                 # composer-less zip builder (Phase 8)
+languages/
+└── wc-maya-gateway.pot              # bundled translation template (Phase 8)
 ```
 
 ## "Which file do I open?"
@@ -90,6 +104,10 @@ src/
 | Change void-vs-refund decision or multi-capture split | [src/Gateway/RefundProcessor.php](../src/Gateway/RefundProcessor.php) — `plan_capture_actions()` is pure-static and exhaustively unit-tested |
 | Change how the gateway shows up in the block-based Cart/Checkout | [src/Blocks/MayaBlocksPaymentMethod.php](../src/Blocks/MayaBlocksPaymentMethod.php) (PHP side — title/description/icon/supports) and [assets/js/maya-blocks.js](../assets/js/maya-blocks.js) (frontend `registerPaymentMethod` call) |
 | Add an icon to the block payment method | Hook the `wc_maya_blocks_icon_url` filter (string URL) — read in `MayaBlocksPaymentMethod::resolve_icon_url()` |
+| Tweak the admin event-log viewer | [src/Admin/EventLog/EventLogPage.php](../src/Admin/EventLog/EventLogPage.php) (UI + file picking) — line parsing in [src/Admin/EventLog/EventLogParser.php](../src/Admin/EventLog/EventLogParser.php) is pure-static |
+| Change which dispatch failures get retried | `RETRYABLE_ACTIONS` in [src/Webhook/RetryQueue.php](../src/Webhook/RetryQueue.php) — backoff schedule is `RetryQueue::plan_delay()` |
+| Regenerate the .pot translation template | `php bin/make-pot.php` ([bin/make-pot.php](../bin/make-pot.php)) writes `languages/wc-maya-gateway.pot` |
+| Build a production-installable zip | `bin/build-release.sh` ([bin/build-release.sh](../bin/build-release.sh)) — composer-less, dev/tests/docs excluded |
 
 ## Service-registration convention
 
@@ -363,6 +381,90 @@ FeaturesUtil::declare_compatibility('cart_checkout_blocks', WC_MAYA_PLUGIN_FILE,
 Without that declaration, WooCommerce hides the gateway from the block
 checkout even if the integration class is registered.
 
+## Observability and retry (Phase 8)
+
+### Maya events log viewer
+
+The `wc-maya-gateway` log channel collects every outgoing API request,
+every verification decision, and every state change. The global WC log
+page (WooCommerce → Status → Logs) shows them with every other
+extension's entries — usable but noisy. Phase 8 adds a dedicated
+"Maya events" tab under WC → Status that:
+
+- Lists every `wc-maya-gateway-*.log` file (newest first) in a file
+  picker.
+- Parses the selected file via `EventLogParser::parse_lines()` — pure-
+  static, robust against malformed lines and message text that contains
+  `{` (e.g. `/payments/v1/payments/{id}/capture` URLs).
+- Filters by level (DEBUG / INFO / WARNING / ERROR) and free-text
+  search (matches against both the message and the JSON-encoded
+  context).
+- Renders the result as a `widefat striped` table with the context
+  pretty-printed as JSON.
+
+```text
+EventLogPage::render()
+    ├── EventLogPage::list_log_files()      # globs WC_LOG_DIR for wc-maya-gateway-*.log
+    ├── EventLogPage::resolve_selected_file(...)
+    ├── EventLogParser::parse_lines(file_contents)
+    ├── EventLogParser::filter_by_level(...)
+    ├── EventLogParser::filter_by_search(...)
+    └── EventLogPage::tail(entries, MAX_ENTRIES)   # cap at 500 per render
+```
+
+### Action Scheduler retry safety net
+
+`WebhookHandler::process()` calls `RetryQueue::maybe_schedule(...)`
+right after `EventDispatcher::dispatch(...)`. The retry queue inspects
+the dispatch's `action` field and, for a small allow-list of transient
+failures, schedules a follow-up via `as_schedule_single_action`:
+
+```text
+dispatch.action in RETRYABLE_ACTIONS?  (default: order_not_found,
+    │                                    manual_capture_lookup_failed,
+    │                                    manual_capture_lookup_unavailable)
+    ├── no  → return; let the failure stand
+    └── yes → attempt < MAX_ATTEMPTS (4)?
+        ├── no  → log + give up
+        └── yes → as_schedule_single_action(time() + plan_delay(attempt+1),
+                       'wc_maya_replay_webhook',
+                       [{ payload, attempt+1 }],
+                       group='wc-maya-gateway')
+```
+
+When AS fires the scheduled action, `RetryQueue::handle()` rebuilds
+the dispatcher (with a fresh `Payments` endpoint from the saved
+settings) and re-runs `dispatch()` on the same payload. It does
+**not** re-verify the signature — the payload was verified on the
+original delivery; the replay's purpose is purely to retry the local
+processing.
+
+`plan_delay()` is exponential with a 60-second floor: 1m → 4m → 16m
+→ 64m. Pure-static so the policy is unit-testable without touching AS.
+
+Idempotency rules from upstream phases hold: `payment_complete()` is
+idempotent inside WC; an order already in `paid` short-circuits in
+`EventDispatcher::dispatch` regardless of how many times we replay.
+
+### Translation pipeline
+
+`bin/make-pot.php` walks `src/` + `templates/` + the main plugin file
+with a focused regex extractor for the six call shapes we actually use
+(`__`, `_e`, `esc_html__`, `esc_attr__`, `_n`, `_x`). Output is
+`languages/wc-maya-gateway.pot`, sorted alphabetically with file:line
+references for every occurrence. `Plugin::init()` calls
+`load_plugin_textdomain('wc-maya-gateway', false, 'languages')` so any
+shipped or user-installed `.mo` is picked up automatically.
+
+### Release build
+
+`bin/build-release.sh` rsyncs the runtime files into
+`dist/woocommerce-maya-gateway/`, runs `composer install --no-dev
+--optimize-autoloader --classmap-authoritative` inside the staging
+copy, strips vendor-side test / doc directories, and zips up the
+result as `dist/wc-maya-gateway-<version>.zip`. The plugin's working
+tree is never touched — composer.lock stays at the dev resolve.
+
 ## Adding an endpoint
 
 The pattern is set by [src/Api/Endpoints/Checkouts.php](../src/Api/Endpoints/Checkouts.php) and
@@ -382,6 +484,7 @@ it's being asked to call.
 ```
 tests/Unit/
 ├── Admin/Ajax/TestConnectionTest.php
+├── Admin/EventLog/EventLogParserTest.php
 ├── Api/
 │   ├── MayaApiClientTest.php
 │   └── Endpoints/
@@ -414,6 +517,7 @@ tests/Unit/
     ├── PayloadFlattenerTest.php
     ├── PublicKeyBundleTest.php
     ├── RegistrarTest.php
+    ├── RetryQueueTest.php
     ├── SignatureVerifierTest.php
     ├── SimulatorTest.php
     ├── TimestampVerifierTest.php

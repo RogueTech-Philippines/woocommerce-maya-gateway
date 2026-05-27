@@ -8,6 +8,22 @@
 
 declare(strict_types=1);
 
+if (! function_exists('wc_get_logger')) {
+    /**
+     * Test stub for WC's logger factory.
+     *
+     * Returns null by default — which makes {@see \TaniKyuun\MayaGateway\Util\Logger}
+     * a no-op, matching production behavior when WooCommerce's logger is
+     * unavailable, and keeping logging from bleeding across tests. LoggerTest
+     * registers a capturing sink in $GLOBALS['wc_maya_test_log_sink'] for the
+     * duration of its own cases and unsets it afterwards.
+     */
+    function wc_get_logger(): ?object
+    {
+        return $GLOBALS['wc_maya_test_log_sink'] ?? null;
+    }
+}
+
 if (! class_exists('WP_Error')) {
     /**
      * Bare minimum WP_Error stub for unit tests.
