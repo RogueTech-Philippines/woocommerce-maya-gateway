@@ -168,7 +168,7 @@ class CaptureProcessor
     }
 
     /**
-     * Find the first `AUTHORIZED` payment for which Maya still permits a
+     * Find the first authorization payment for which Maya still permits a
      * capture. Returns null when no such payment exists (e.g. authorization
      * expired or already fully captured).
      *
@@ -177,7 +177,7 @@ class CaptureProcessor
     public static function find_capturable_payment(array $payments): ?PaymentRecord
     {
         foreach ($payments as $payment) {
-            if ('AUTHORIZED' === $payment->status && $payment->can_capture) {
+            if ($payment->is_authorization() && $payment->can_capture) {
                 return $payment;
             }
         }

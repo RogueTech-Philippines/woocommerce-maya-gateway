@@ -97,15 +97,14 @@ When `manual_capture != none`, the order's life cycle changes shape:
 2. PaymentProcessor::process() persists _maya_authorization_type=preauthorization
    alongside the existing _maya_checkout_id + _maya_idempotency_key.
    ↓
-3. Customer returns from Maya → ReturnHandler flips pending → processing.
+3. Customer returns from Maya → ReturnHandler drains cart + redirects to order received.
    ↓
 4. AUTHORIZED webhook → EventDispatcher::note_authorized() adds
    "Authorized. Use the Capture panel to capture funds." (no state change.)
    ↓
 5. Merchant opens the order edit screen:
    ├── CaptureButton::should_render() does a live Payments::get_by_rrn lookup
-   │       and confirms AUTHORIZED + canCapture is present
-   │       → renders "Capture Maya payment" button beside Refund
+   │       and confirms an authorization record with canCapture is present
    └── CapturePanel::render() does the same lookup, then includes
            templates/admin/capture-panel.php with the live
            authorized/captured/remaining trio
@@ -116,7 +115,7 @@ When `manual_capture != none`, the order's life cycle changes shape:
    └── CapturePayment::handle() → CaptureProcessor::capture()
            ├── validate amount > 0
            ├── Payments::get_by_rrn(<order_id>)
-           ├── find AUTHORIZED + canCapture payment
+           ├── find authorization record with canCapture
            ├── validate amount ≤ (authorized - captured)
            ├── Payments::capture(payment_id, payload)
            ├── add_order_note(updated balances)
@@ -175,8 +174,8 @@ The validation pipeline:
 
 1. `amount > 0` (else `wc_maya_capture_invalid_amount`).
 2. `Payments::get_by_rrn(order_id)` — bubble any transport error.
-3. `find_capturable_payment()` returns the first `AUTHORIZED + canCapture: true`
-   record (else `wc_maya_capture_no_authorized_payment`).
+3. `find_capturable_payment()` returns the first authorization record with
+   `canCapture: true` (else `wc_maya_capture_no_authorized_payment`).
 4. `amount ≤ (authorized − captured)` with 0.005 currency tolerance
    (else `wc_maya_capture_exceeds_remaining`).
 5. `Payments::capture()` — bubble any transport error.
@@ -203,8 +202,8 @@ Maya payment" button only when *all* of these are true:
 
 - Order's payment method is `maya_checkout`.
 - `_maya_authorization_type` meta is anything other than `none`.
-- A live `Payments::get_by_rrn` lookup finds an `AUTHORIZED + canCapture`
-  payment.
+- A live `Payments::get_by_rrn` lookup finds an authorization record with
+  `canCapture`.
 
 The synchronous Maya call is acceptable here because the order edit
 screen already runs many heavyweight queries and merchants reach it
@@ -339,11 +338,9 @@ Expected: `Tests: 131 passed (430 assertions)`.
 1. Gateway settings: pick **PREAUTHORIZATION** for "Manual capture". Save.
 2. Place a sandbox order (₱200), pay with sandbox card on Maya's hosted
    page.
-3. After return: order is `processing` with note "Customer returned from
-   Maya checkout. Awaiting webhook confirmation."
-4. ~5 seconds later the `AUTHORIZED` webhook lands → order gets a second
-   note: "Maya authorized the payment. Use the Capture panel to capture
-   funds." Order stays in `processing`.
+3. ReturnHandler drains the cart and redirects to the order-received page.
+4. ~5 seconds later the `AUTHORIZED` webhook lands → order gets a note:
+   "Maya authorized the payment. Use the Capture panel to capture funds."
 5. Open the order edit screen. You should see:
    - **Capture Maya payment** button next to **Refund**.
    - **Maya capture** row in the order totals table with

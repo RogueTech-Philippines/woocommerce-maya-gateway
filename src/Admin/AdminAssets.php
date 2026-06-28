@@ -74,7 +74,6 @@ class AdminAssets
                     'webhookStatusEmpty'    => __('No webhooks registered with Maya for this account.', 'wc-maya-gateway'),
                     'webhookStatusManaged'  => __('Managed by this plugin', 'wc-maya-gateway'),
                     'webhookStatusExternal' => __('External — left alone on save', 'wc-maya-gateway'),
-                    'webhookStatusLoading'  => __('Loading…', 'wc-maya-gateway'),
                     'captureSubmitting'     => __('Capturing…', 'wc-maya-gateway'),
                     'captureSuccess'        => __('Capture submitted. Webhook will confirm the new balance.', 'wc-maya-gateway'),
                 ],
@@ -107,8 +106,9 @@ class AdminAssets
         }
 
         if ('post.php' === $hook) {
-            $post_type = isset($_GET['post']) && function_exists('get_post_type') // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-                ? (string) get_post_type((int) wp_unslash($_GET['post'])) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $post_id   = isset($_GET['post']) ? absint(sanitize_text_field(wp_unslash($_GET['post']))) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $post_type = $post_id > 0 && function_exists('get_post_type')
+                ? (string) get_post_type($post_id)
                 : '';
             return 'shop_order' === $post_type;
         }

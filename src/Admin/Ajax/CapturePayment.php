@@ -44,8 +44,8 @@ class CapturePayment
 
         check_ajax_referer(AdminAssets::NONCE_ACTION, 'nonce');
 
-        $order_id = isset($_POST['order_id']) ? absint(wp_unslash($_POST['order_id'])) : 0;
-        $amount   = isset($_POST['capture_amount']) ? (float) wp_unslash($_POST['capture_amount']) : 0.0;
+        $order_id = isset($_POST['order_id']) ? absint(sanitize_text_field(wp_unslash($_POST['order_id']))) : 0;
+        $amount   = isset($_POST['capture_amount']) ? (float) sanitize_text_field(wp_unslash($_POST['capture_amount'])) : 0.0;
 
         if ($order_id <= 0) {
             wp_send_json_error([ 'message' => __('Order id is required.', 'wc-maya-gateway') ], 400);

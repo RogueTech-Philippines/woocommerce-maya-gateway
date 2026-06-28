@@ -80,7 +80,7 @@ auth_type == 'none' (immediate-capture order)
         └── canRefund → Payments::refund(amount)
 
 auth_type ∈ {normal, final, preauthorization} (manual-capture order)
-    └── find AUTHORIZED payment
+    └── find authorization record
         ├── none found → WP_Error no_authorization
         ├── only the auth exists (no captures yet)
         │   ├── !canVoid → WP_Error authorization_locked
@@ -213,7 +213,7 @@ adds order notes for each executed action, and returns `true` (WC's
 | `wc_maya_refund_no_payment` | Immediate-capture order with no PAYMENT_SUCCESS or REFUNDED record |
 | `wc_maya_refund_not_refundable` | Maya says `canRefund: false` on the only candidate |
 | `wc_maya_refund_partial_void` | Asked for a non-full amount on a void-only payment |
-| `wc_maya_refund_no_authorization` | Manual-capture order with no AUTHORIZED record |
+| `wc_maya_refund_no_authorization` | Manual-capture order with no authorization record |
 | `wc_maya_refund_authorization_locked` | Authorization no longer voidable (expired / consumed) |
 | `wc_maya_refund_insufficient_balance` | Multi-capture split couldn't cover the requested amount |
 | `wc_maya_refund_empty_plan` | Planner produced no actions — defensive guard |

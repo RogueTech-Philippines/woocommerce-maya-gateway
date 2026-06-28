@@ -14,7 +14,7 @@ src/
 │   ├── FieldRenderers.php           # generate_<type>_html implementations + validators
 │   ├── Ajax/
 │   │   ├── TestConnection.php       # AJAX handler; orchestrates the two probes
-│   │   ├── SimulateWebhook.php      # AJAX handler; POSTs a forged payload at our own webhook endpoint
+│   │   ├── SimulateWebhook.php      # AJAX handler; dispatches a forged payload in-process
 │   │   ├── RefreshWebhooks.php      # AJAX handler; re-fetches Maya's registered webhooks for the status table
 │   │   └── CapturePayment.php       # AJAX handler; thin wrapper over CaptureProcessor
 │   ├── EventLog/
@@ -60,7 +60,7 @@ src/
     ├── Registrar.php                # idempotent reconcile: delete managed set → create five fresh
     ├── EventDispatcher.php          # verified event → WC order state change (Phase 4)
     ├── RetryQueue.php               # Action Scheduler-backed safety net for transient dispatch failures (Phase 8)
-    └── Simulator.php                # local-dev forged-payload poster with bypass header
+    └── Simulator.php                # sandbox-only in-process webhook simulation
 ```
 
 Tooling and translation files:
@@ -75,39 +75,39 @@ languages/
 
 ## "Which file do I open?"
 
-| I want to… | Open |
-| --- | --- |
-| Add a new gateway setting | [src/Admin/FormFields.php](../src/Admin/FormFields.php) |
-| Add a custom field type (button, table, badge) | [src/Admin/FieldRenderers.php](../src/Admin/FieldRenderers.php) + [src/Admin/FormFields.php](../src/Admin/FormFields.php) |
-| Read a setting at runtime | [src/Settings/SettingsHelper.php](../src/Settings/SettingsHelper.php) |
-| Add an admin AJAX endpoint | new file under [src/Admin/Ajax/](../src/Admin/Ajax/) |
-| Localize a new JS string | [src/Admin/AdminAssets.php](../src/Admin/AdminAssets.php) |
-| Add a Maya API endpoint call | new class under [src/Api/Endpoints/](../src/Api/Endpoints/) that composes `MayaApiClient` |
-| Add a response/payload type | new immutable class under [src/Value/](../src/Value/) with `from_array()` |
-| Build a Maya `requestReferenceNumber` | [src/Util/IdempotencyKey.php](../src/Util/IdempotencyKey.php) |
-| Change payment-processing logic | [src/Gateway/MayaGateway.php](../src/Gateway/MayaGateway.php) (`process_payment`) |
-| Change how a Maya event maps to a WC order | [src/Webhook/WebhookHandler.php](../src/Webhook/WebhookHandler.php) |
-| Adjust what gets logged | [src/Util/Logger.php](../src/Util/Logger.php) (levels) or [src/Api/MayaApiClient.php](../src/Api/MayaApiClient.php) (call sites) |
-| Register a new hook | [src/Plugin.php](../src/Plugin.php) (only if cross-cutting) or the owning class's `register()` method |
-| Tweak signature/timestamp/IP checks | [src/Webhook/SignatureVerifier.php](../src/Webhook/SignatureVerifier.php) / [src/Webhook/TimestampVerifier.php](../src/Webhook/TimestampVerifier.php) / [src/Webhook/IpAllowlist.php](../src/Webhook/IpAllowlist.php) |
-| Add or change webhook routing | [src/Webhook/WebhookHandler.php](../src/Webhook/WebhookHandler.php) (`process()` is the shared core) |
-| Rotate Maya's webhook public keys | [src/Webhook/PublicKeyBundle.php](../src/Webhook/PublicKeyBundle.php) |
-| Simulate a webhook locally | "Simulate webhook" button on the gateway settings → [src/Admin/Ajax/SimulateWebhook.php](../src/Admin/Ajax/SimulateWebhook.php) → [src/Webhook/Simulator.php](../src/Webhook/Simulator.php) |
-| Change which events the plugin manages | `MANAGED_EVENTS` constant in [src/Webhook/Registrar.php](../src/Webhook/Registrar.php) |
-| Tweak what happens on settings save | `process_admin_options()` override in [src/Gateway/MayaGateway.php](../src/Gateway/MayaGateway.php) |
-| Change the checkout payload sent to Maya | [src/Gateway/PaymentProcessor.php](../src/Gateway/PaymentProcessor.php) (`build_payload` is pure-static, unit-testable) |
-| Change customer return-from-Maya behavior | [src/Gateway/ReturnHandler.php](../src/Gateway/ReturnHandler.php) |
-| Change webhook event → order state mapping | [src/Webhook/EventDispatcher.php](../src/Webhook/EventDispatcher.php) (`dispatch()` switch on `WebhookEvent`) |
-| Add a manual-capture authorization mode | `AuthorizationType` enum in [src/Value/AuthorizationType.php](../src/Value/AuthorizationType.php), then surface in [src/Admin/FormFields.php](../src/Admin/FormFields.php) select options |
-| Change capture validation rules | [src/Gateway/CaptureProcessor.php](../src/Gateway/CaptureProcessor.php) (`capture()` validation + dispatch) |
-| Tweak the capture-panel HTML | [templates/admin/capture-panel.php](../templates/admin/capture-panel.php) (`include`-rendered template) |
-| Change void-vs-refund decision or multi-capture split | [src/Gateway/RefundProcessor.php](../src/Gateway/RefundProcessor.php) — `plan_capture_actions()` is pure-static and exhaustively unit-tested |
+| I want to…                                                       | Open                                                                                                                                                                                                                                 |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Add a new gateway setting                                        | [src/Admin/FormFields.php](../src/Admin/FormFields.php)                                                                                                                                                                              |
+| Add a custom field type (button, table, badge)                   | [src/Admin/FieldRenderers.php](../src/Admin/FieldRenderers.php) + [src/Admin/FormFields.php](../src/Admin/FormFields.php)                                                                                                            |
+| Read a setting at runtime                                        | [src/Settings/SettingsHelper.php](../src/Settings/SettingsHelper.php)                                                                                                                                                                |
+| Add an admin AJAX endpoint                                       | new file under [src/Admin/Ajax/](../src/Admin/Ajax/)                                                                                                                                                                                 |
+| Localize a new JS string                                         | [src/Admin/AdminAssets.php](../src/Admin/AdminAssets.php)                                                                                                                                                                            |
+| Add a Maya API endpoint call                                     | new class under [src/Api/Endpoints/](../src/Api/Endpoints/) that composes `MayaApiClient`                                                                                                                                            |
+| Add a response/payload type                                      | new immutable class under [src/Value/](../src/Value/) with `from_array()`                                                                                                                                                            |
+| Build a Maya `requestReferenceNumber`                            | [src/Util/IdempotencyKey.php](../src/Util/IdempotencyKey.php)                                                                                                                                                                        |
+| Change payment-processing logic                                  | [src/Gateway/MayaGateway.php](../src/Gateway/MayaGateway.php) (`process_payment`)                                                                                                                                                    |
+| Change how a Maya event maps to a WC order                       | [src/Webhook/WebhookHandler.php](../src/Webhook/WebhookHandler.php)                                                                                                                                                                  |
+| Adjust what gets logged                                          | [src/Util/Logger.php](../src/Util/Logger.php) (levels) or [src/Api/MayaApiClient.php](../src/Api/MayaApiClient.php) (call sites)                                                                                                     |
+| Register a new hook                                              | [src/Plugin.php](../src/Plugin.php) (only if cross-cutting) or the owning class's `register()` method                                                                                                                                |
+| Tweak signature/timestamp/IP checks                              | [src/Webhook/SignatureVerifier.php](../src/Webhook/SignatureVerifier.php) / [src/Webhook/TimestampVerifier.php](../src/Webhook/TimestampVerifier.php) / [src/Webhook/IpAllowlist.php](../src/Webhook/IpAllowlist.php)                |
+| Add or change webhook routing                                    | [src/Webhook/WebhookHandler.php](../src/Webhook/WebhookHandler.php) (`process()` is the shared core)                                                                                                                                 |
+| Rotate Maya's webhook public keys                                | [src/Webhook/PublicKeyBundle.php](../src/Webhook/PublicKeyBundle.php)                                                                                                                                                                |
+| Simulate a webhook locally                                       | "Simulate webhook" button on the gateway settings → [src/Admin/Ajax/SimulateWebhook.php](../src/Admin/Ajax/SimulateWebhook.php) → [src/Webhook/Simulator.php](../src/Webhook/Simulator.php)                                          |
+| Change which events the plugin manages                           | `MANAGED_EVENTS` constant in [src/Webhook/Registrar.php](../src/Webhook/Registrar.php)                                                                                                                                               |
+| Tweak what happens on settings save                              | `process_admin_options()` override in [src/Gateway/MayaGateway.php](../src/Gateway/MayaGateway.php)                                                                                                                                  |
+| Change the checkout payload sent to Maya                         | [src/Gateway/PaymentProcessor.php](../src/Gateway/PaymentProcessor.php) (`build_payload` is pure-static, unit-testable)                                                                                                              |
+| Change customer return-from-Maya behavior                        | [src/Gateway/ReturnHandler.php](../src/Gateway/ReturnHandler.php)                                                                                                                                                                    |
+| Change webhook event → order state mapping                       | [src/Webhook/EventDispatcher.php](../src/Webhook/EventDispatcher.php) (`dispatch()` switch on `WebhookEvent`)                                                                                                                        |
+| Add a manual-capture authorization mode                          | `AuthorizationType` enum in [src/Value/AuthorizationType.php](../src/Value/AuthorizationType.php), then surface in [src/Admin/FormFields.php](../src/Admin/FormFields.php) select options                                            |
+| Change capture validation rules                                  | [src/Gateway/CaptureProcessor.php](../src/Gateway/CaptureProcessor.php) (`capture()` validation + dispatch)                                                                                                                          |
+| Tweak the capture-panel HTML                                     | [templates/admin/capture-panel.php](../templates/admin/capture-panel.php) (`include`-rendered template)                                                                                                                              |
+| Change void-vs-refund decision or multi-capture split            | [src/Gateway/RefundProcessor.php](../src/Gateway/RefundProcessor.php) — `plan_capture_actions()` is pure-static and exhaustively unit-tested                                                                                         |
 | Change how the gateway shows up in the block-based Cart/Checkout | [src/Blocks/MayaBlocksPaymentMethod.php](../src/Blocks/MayaBlocksPaymentMethod.php) (PHP side — title/description/icon/supports) and [assets/js/maya-blocks.js](../assets/js/maya-blocks.js) (frontend `registerPaymentMethod` call) |
-| Add an icon to the block payment method | Hook the `wc_maya_blocks_icon_url` filter (string URL) — read in `MayaBlocksPaymentMethod::resolve_icon_url()` |
-| Tweak the admin event-log viewer | [src/Admin/EventLog/EventLogPage.php](../src/Admin/EventLog/EventLogPage.php) (UI + file picking) — line parsing in [src/Admin/EventLog/EventLogParser.php](../src/Admin/EventLog/EventLogParser.php) is pure-static |
-| Change which dispatch failures get retried | `RETRYABLE_ACTIONS` in [src/Webhook/RetryQueue.php](../src/Webhook/RetryQueue.php) — backoff schedule is `RetryQueue::plan_delay()` |
-| Regenerate the .pot translation template | `php bin/make-pot.php` ([bin/make-pot.php](../bin/make-pot.php)) writes `languages/wc-maya-gateway.pot` |
-| Build a production-installable zip | `bin/build-release.sh` ([bin/build-release.sh](../bin/build-release.sh)) — composer-less, dev/tests/docs excluded |
+| Add an icon to the block payment method                          | Hook the `wc_maya_blocks_icon_url` filter (string URL) — read in `MayaBlocksPaymentMethod::resolve_icon_url()`                                                                                                                       |
+| Tweak the admin event-log viewer                                 | [src/Admin/EventLog/EventLogPage.php](../src/Admin/EventLog/EventLogPage.php) (UI + file picking) — line parsing in [src/Admin/EventLog/EventLogParser.php](../src/Admin/EventLog/EventLogParser.php) is pure-static                 |
+| Change which dispatch failures get retried                       | `RETRYABLE_ACTIONS` in [src/Webhook/RetryQueue.php](../src/Webhook/RetryQueue.php) — backoff schedule is `RetryQueue::plan_delay()`                                                                                                  |
+| Regenerate the .pot translation template                         | `php bin/make-pot.php` ([bin/make-pot.php](../bin/make-pot.php)) writes `languages/wc-maya-gateway.pot`                                                                                                                              |
+| Build a production-installable zip                               | `bin/build-release.sh` ([bin/build-release.sh](../bin/build-release.sh)) — composer-less, dev/tests/docs excluded                                                                                                                    |
 
 ## Service-registration convention
 
@@ -165,10 +165,10 @@ state from POST so the toggle works without saving.
 
 `WebhookHandler::register()` wires up two URLs that Maya can call:
 
-| URL                                      | Hook                                              | Why we keep both |
-| ---                                      | ---                                               | --- |
-| `POST /wp-json/wc-maya/v1/webhook`       | `rest_api_init` → `register_rest_route()`         | Primary. Modern WP routing; predictable JSON in/out; what new installs should register. |
-| `POST /?wc-api=maya_webhook`             | `woocommerce_api_maya_webhook` → `handle_wc_api()` | Compatibility shim. Matches the URL shape WC has historically used so migrating merchants don't have to re-register webhooks in the Maya Manager. |
+| URL                                | Hook                                               | Why we keep both                                                                                                                                  |
+| ---------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /wp-json/wc-maya/v1/webhook` | `rest_api_init` → `register_rest_route()`          | Primary. Modern WP routing; predictable JSON in/out; what new installs should register.                                                           |
+| `POST /?wc-api=maya_webhook`       | `woocommerce_api_maya_webhook` → `handle_wc_api()` | Compatibility shim. Matches the URL shape WC has historically used so migrating merchants don't have to re-register webhooks in the Maya Manager. |
 
 Both entrypoints converge on `WebhookHandler::process()` — a pure(-ish)
 function that takes `(body, headers, source_ip, is_sandbox, logger)` and
@@ -177,24 +177,24 @@ booting WP_REST_Server, php://input, or the gateway settings option.
 
 ## Verification pipeline
 
-Inside `process()`, every (non-simulated) webhook is checked in this order:
+Inside `process()`, every public webhook is checked in this order:
 
 1. **Body parses as JSON.** (400 `invalid_body`.)
 2. **Timestamp within ±300s** — `TimestampVerifier` reads epoch-ms from
    `X-Maya-Webhook-Timestamp`. (401 `stale_timestamp`.)
 3. **Signature verifies** — `SignatureVerifier` flattens via
    `PayloadFlattener` and runs `openssl_verify(...,
-   'sha256WithRSAEncryption')` against each PEM in `PublicKeyBundle`. (401
+'sha256WithRSAEncryption')` against each PEM in `PublicKeyBundle`. (401
    `invalid_signature`.)
 4. **Source IP in `IpAllowlist`** for the active environment. (403
    `source_ip_blocked`.)
 5. On success, look up the event via `WebhookEvent::try_from_string` and
-   log the "would dispatch" line. Phase 4 swaps the log line for the real
-   `EventDispatcher` call.
+   dispatch it via `EventDispatcher`.
 
-`X-Simulated-Webhook: true` is honored **only in sandbox mode** and short-
-circuits steps 2–4 so a developer can exercise the pipeline without a
-tunnel.
+The admin simulator does not expose an HTTP bypass header. It calls
+`WebhookHandler::process(..., trusted_simulation: true)` directly after the
+sandbox-only AJAX gate, skipping timestamp/signature/IP checks only for that
+in-process call.
 
 ## Webhook registration — settings-save flow
 
@@ -232,7 +232,7 @@ form render itself never blocks on Maya.
    └── ?wc-api=maya_return&order=<id>&status=success
        └── ReturnHandler::handle()
            ├── if status=failed: notice + back to checkout payment URL
-           └── else: flip pending → processing, empty cart, redirect to
+           └── else: empty cart, redirect to
                      get_checkout_order_received_url()
 3. Maya's webhook server independently POSTs the signed result:
    └── WebhookHandler::process() (Phase 2 verify pipeline)
@@ -244,7 +244,7 @@ form render itself never blocks on Maya.
            └── other events (CHECKOUT_*, AUTHORIZED) → log + skip (Phase 5 layer)
 ```
 
-`ReturnHandler` *never* marks orders completed — the browser is untrusted.
+`ReturnHandler` _never_ marks orders completed — the browser is untrusted.
 `payment_complete()` only fires from the signed webhook, so a forged
 return URL can't promote an order past `processing`.
 
@@ -258,13 +258,13 @@ On checkout (PaymentProcessor)
     └── adds authorizationType: UPPERCASE to the createCheckout payload
     └── persists _maya_authorization_type = 'normal' | 'final' | 'preauthorization'
 
-After return + AUTHORIZED webhook
+After AUTHORIZED webhook
     └── EventDispatcher::note_authorized() adds a "Use the Capture panel" note
-    └── order stays in 'processing' (set by ReturnHandler)
+    └── no order status change
 
 Merchant clicks Capture on the order edit page
     └── CaptureButton::should_render() did the live Payments::get_by_rrn lookup
-        and confirmed an AUTHORIZED + canCapture payment exists
+        and confirmed an authorization record with canCapture exists
     └── CapturePanel rendered the form with live authorized/captured/remaining
     └── JS POSTs to wc_maya_capture_payment AJAX
     └── CapturePayment::handle() → CaptureProcessor::capture()
@@ -280,7 +280,7 @@ PAYMENT_SUCCESS webhook arrives (asynchronous, from the capture)
 ```
 
 The order's authoritative completion still comes from the signed webhook —
-the capture API response is *informational only*. Two partial captures
+the capture API response is _informational only_. Two partial captures
 that together cover the authorized amount produce two PAYMENT_SUCCESS
 webhooks; only the second one (with the matching cumulative
 `capturedAmount`) promotes the order.
@@ -299,7 +299,7 @@ Immediate-capture order (auth type 'none')
         └── canRefund → Payments::refund(amount)
 
 Manual-capture order (auth type normal/final/preauthorization)
-    └── find AUTHORIZED payment
+    └── find authorization record
         ├── only the auth exists (no captures yet)
         │   ├── canVoid + amount == full → Payments::void(auth)
         │   └── partial → WP_Error partial_void

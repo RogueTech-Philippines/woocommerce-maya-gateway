@@ -6,6 +6,43 @@
     return template.replace(/%d|%s/, value);
   };
 
+  function ajaxMessage(source) {
+    if (source && source.data && source.data.message) {
+      return source.data.message;
+    }
+    if (
+      source &&
+      source.responseJSON &&
+      source.responseJSON.data &&
+      source.responseJSON.data.message
+    ) {
+      return source.responseJSON.data.message;
+    }
+    return (source && source.statusText) || wcMayaAdmin.i18n.unexpectedResponse;
+  }
+
+  function renderError($container, message) {
+    $container
+      .empty()
+      .append($('<p class="wc-maya-error"></p>').text(message));
+  }
+
+  function renderTableError($table, message) {
+    $table
+      .find("tbody")
+      .empty()
+      .append(
+        $("<tr></tr>").append(
+          $('<td colspan="4" class="wc-maya-error"></td>').text(message),
+        ),
+      );
+  }
+
+  function setBusy($spinner, $button, busy) {
+    $spinner.toggleClass("is-active", busy);
+    $button.prop("disabled", busy);
+  }
+
   function attachKeyToggles() {
     $("input.wc-maya-key-input").each(function () {
       const $input = $(this);
@@ -92,8 +129,7 @@
 
     $btn.on("click", function () {
       $result.empty().append($("<p></p>").text(wcMayaAdmin.i18n.testing));
-      $spinner.addClass("is-active");
-      $btn.prop("disabled", true);
+      setBusy($spinner, $btn, true);
 
       const payload = {
         action: wcMayaAdmin.actions.testConnection,
@@ -114,29 +150,13 @@
             renderResult($result, response.data);
             return;
           }
-          const message =
-            response && response.data && response.data.message
-              ? response.data.message
-              : wcMayaAdmin.i18n.unexpectedResponse;
-          $result
-            .empty()
-            .append($('<p class="wc-maya-error"></p>').text(message));
+          renderError($result, ajaxMessage(response));
         })
         .fail(function (xhr) {
-          const message =
-            xhr &&
-            xhr.responseJSON &&
-            xhr.responseJSON.data &&
-            xhr.responseJSON.data.message
-              ? xhr.responseJSON.data.message
-              : xhr.statusText || wcMayaAdmin.i18n.unexpectedResponse;
-          $result
-            .empty()
-            .append($('<p class="wc-maya-error"></p>').text(message));
+          renderError($result, ajaxMessage(xhr));
         })
         .always(function () {
-          $spinner.removeClass("is-active");
-          $btn.prop("disabled", false);
+          setBusy($spinner, $btn, false);
         });
     });
   }
@@ -155,8 +175,7 @@
 
     $btn.on("click", function () {
       $result.empty();
-      $spinner.addClass("is-active");
-      $btn.prop("disabled", true);
+      setBusy($spinner, $btn, true);
 
       const payload = {
         action: wcMayaAdmin.actions.simulateWebhook,
@@ -185,29 +204,13 @@
               );
             return;
           }
-          const message =
-            response && response.data && response.data.message
-              ? response.data.message
-              : wcMayaAdmin.i18n.unexpectedResponse;
-          $result
-            .empty()
-            .append($('<p class="wc-maya-error"></p>').text(message));
+          renderError($result, ajaxMessage(response));
         })
         .fail(function (xhr) {
-          const message =
-            xhr &&
-            xhr.responseJSON &&
-            xhr.responseJSON.data &&
-            xhr.responseJSON.data.message
-              ? xhr.responseJSON.data.message
-              : xhr.statusText || wcMayaAdmin.i18n.unexpectedResponse;
-          $result
-            .empty()
-            .append($('<p class="wc-maya-error"></p>').text(message));
+          renderError($result, ajaxMessage(xhr));
         })
         .always(function () {
-          $spinner.removeClass("is-active");
-          $btn.prop("disabled", false);
+          setBusy($spinner, $btn, false);
         });
     });
   }
@@ -249,8 +252,7 @@
       return;
     }
 
-    $spinner.addClass("is-active");
-    $btn.prop("disabled", true);
+    setBusy($spinner, $btn, true);
 
     $.post(wcMayaAdmin.ajaxUrl, {
       action: wcMayaAdmin.actions.refreshWebhooks,
@@ -261,39 +263,13 @@
           renderWebhookStatus($table, response.data.webhooks);
           return;
         }
-        const message =
-          response && response.data && response.data.message
-            ? response.data.message
-            : wcMayaAdmin.i18n.unexpectedResponse;
-        $table
-          .find("tbody")
-          .empty()
-          .append(
-            $("<tr></tr>").append(
-              $('<td colspan="4" class="wc-maya-error"></td>').text(message),
-            ),
-          );
+        renderTableError($table, ajaxMessage(response));
       })
       .fail(function (xhr) {
-        const message =
-          xhr &&
-          xhr.responseJSON &&
-          xhr.responseJSON.data &&
-          xhr.responseJSON.data.message
-            ? xhr.responseJSON.data.message
-            : xhr.statusText || wcMayaAdmin.i18n.unexpectedResponse;
-        $table
-          .find("tbody")
-          .empty()
-          .append(
-            $("<tr></tr>").append(
-              $('<td colspan="4" class="wc-maya-error"></td>').text(message),
-            ),
-          );
+        renderTableError($table, ajaxMessage(xhr));
       })
       .always(function () {
-        $spinner.removeClass("is-active");
-        $btn.prop("disabled", false);
+        setBusy($spinner, $btn, false);
       });
   }
 
@@ -378,17 +354,12 @@
       const amount = parseFloat($amount.val() || "0");
 
       if (!orderId || !(amount > 0)) {
-        $result
-          .empty()
-          .append($('<p class="wc-maya-error"></p>').text(
-            wcMayaAdmin.i18n.unexpectedResponse,
-          ));
+        renderError($result, wcMayaAdmin.i18n.unexpectedResponse);
         return;
       }
 
       $result.empty().append($("<p></p>").text(wcMayaAdmin.i18n.captureSubmitting));
-      $spinner.addClass("is-active");
-      $submit.prop("disabled", true);
+      setBusy($spinner, $submit, true);
 
       $.post(wcMayaAdmin.ajaxUrl, {
         action: wcMayaAdmin.actions.capturePayment,
@@ -421,31 +392,14 @@
               ));
             return;
           }
-          const message =
-            response && response.data && response.data.message
-              ? response.data.message
-              : wcMayaAdmin.i18n.unexpectedResponse;
-          $result
-            .empty()
-            .append($('<p class="wc-maya-error"></p>').text(message));
+          renderError($result, ajaxMessage(response));
         })
         .fail(function (xhr) {
-          const message =
-            xhr &&
-            xhr.responseJSON &&
-            xhr.responseJSON.data &&
-            xhr.responseJSON.data.message
-              ? xhr.responseJSON.data.message
-              : xhr.statusText || wcMayaAdmin.i18n.unexpectedResponse;
-          $result
-            .empty()
-            .append($('<p class="wc-maya-error"></p>').text(message));
+          renderError($result, ajaxMessage(xhr));
         })
         .always(function () {
           $spinner.removeClass("is-active");
-          if (parseFloat($amount.val() || "0") > 0) {
-            $submit.prop("disabled", false);
-          }
+          $submit.prop("disabled", parseFloat($amount.val() || "0") <= 0);
         });
     });
   }

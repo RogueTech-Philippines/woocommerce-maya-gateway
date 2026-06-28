@@ -16,13 +16,8 @@ use WC_Order;
 use WP_Error;
 
 /**
- * Builds a forged Maya webhook payload and POSTs it at our own endpoint with
- * the `X-Simulated-Webhook: true` bypass header so a developer can exercise
- * the full webhook pipeline without a tunnel and without signing.
- *
- * Sandbox-only by contract: `WebhookHandler::is_simulated()` rejects the
- * bypass when the gateway is in production mode, so the worst case here is a
- * misconfigured sandbox install accepting the simulator — never production.
+ * Builds a forged Maya webhook payload and dispatches it through the webhook
+ * pipeline in-process, as a trusted sandbox-only simulation.
  *
  * Returns a structured result (status code + decoded body) so the AJAX
  * caller can surface either the handler's success message or its rejection
@@ -66,35 +61,18 @@ class Simulator
             );
         }
 
-        $payload  = self::build_payload($order, $status);
-        $response = wp_remote_post(
-            $this->settings->webhook_url(),
-            [
-                'timeout'   => 15,
-                'sslverify' => false, // local-dev tunnels often present self-signed certs; sandbox check above gates this.
-                'headers'   => [
-                    'Content-Type'                   => 'application/json',
-                    WebhookHandler::HEADER_SIMULATED => 'true',
-                ],
-                'body' => wp_json_encode($payload),
-            ],
+        $body = (string) wp_json_encode(self::build_payload($order, $status));
+
+        return WebhookHandler::process(
+            $body,
+            [],
+            '127.0.0.1',
+            true,
+            new \TaniKyuun\MayaGateway\Util\Logger(true),
+            null,
+            null,
+            true,
         );
-
-        if ($response instanceof WP_Error) {
-            return $response;
-        }
-
-        $status_code = (int) wp_remote_retrieve_response_code($response);
-        $raw_body    = (string) wp_remote_retrieve_body($response);
-        $body        = '' === $raw_body ? [] : json_decode($raw_body, true);
-        if (! is_array($body)) {
-            $body = [ 'raw' => $raw_body ];
-        }
-
-        return [
-            'status' => $status_code,
-            'body'   => $body,
-        ];
     }
 
     /**

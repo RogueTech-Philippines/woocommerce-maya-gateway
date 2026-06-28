@@ -45,7 +45,6 @@ class WebhookHandler
 
     public const HEADER_SIGNATURE = 'x-maya-webhook-signature';
     public const HEADER_TIMESTAMP = 'x-maya-webhook-timestamp';
-    public const HEADER_SIMULATED = 'x-simulated-webhook';
 
     public static function register(): void
     {
@@ -74,7 +73,6 @@ class WebhookHandler
         $headers = [
             self::HEADER_SIGNATURE => (string) $request->get_header(self::HEADER_SIGNATURE),
             self::HEADER_TIMESTAMP => (string) $request->get_header(self::HEADER_TIMESTAMP),
-            self::HEADER_SIMULATED => (string) $request->get_header(self::HEADER_SIMULATED),
         ];
 
         $result = self::process(
@@ -97,7 +95,6 @@ class WebhookHandler
         $headers = [
             self::HEADER_SIGNATURE => isset($_SERVER['HTTP_X_MAYA_WEBHOOK_SIGNATURE']) ? (string) wp_unslash($_SERVER['HTTP_X_MAYA_WEBHOOK_SIGNATURE']) : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
             self::HEADER_TIMESTAMP => isset($_SERVER['HTTP_X_MAYA_WEBHOOK_TIMESTAMP']) ? (string) wp_unslash($_SERVER['HTTP_X_MAYA_WEBHOOK_TIMESTAMP']) : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
-            self::HEADER_SIMULATED => isset($_SERVER['HTTP_X_SIMULATED_WEBHOOK']) ? (string) wp_unslash($_SERVER['HTTP_X_SIMULATED_WEBHOOK']) : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
         ];
 
         $result = self::process(
@@ -137,6 +134,7 @@ class WebhookHandler
         Logger $logger,
         ?SignatureVerifier $signature_verifier_override = null,
         ?EventDispatcher $event_dispatcher_override = null,
+        bool $trusted_simulation = false,
     ): array {
         $payload = json_decode($body, true);
 
@@ -145,9 +143,7 @@ class WebhookHandler
             return self::reject(400, 'invalid_body', 'Request body must be JSON.');
         }
 
-        $is_simulated = self::is_simulated($headers, $is_sandbox);
-
-        if (! $is_simulated) {
+        if (! $trusted_simulation) {
             $timestamp = $headers[ self::HEADER_TIMESTAMP ] ?? '';
             if (! TimestampVerifier::within_tolerance($timestamp)) {
                 $logger->warning(
@@ -187,12 +183,12 @@ class WebhookHandler
         $logger->info(
             sprintf(
                 'Webhook verified%s — dispatching %s for order %s.',
-                $is_simulated ? ' (simulated)' : '',
+                $trusted_simulation ? ' (simulated)' : '',
                 null !== $event ? $event->value : 'UNKNOWN(' . (string) $event_name . ')',
                 '' === $reference ? '?' : $reference,
             ),
             [
-                'simulated' => $is_simulated,
+                'simulated' => $trusted_simulation,
                 'source_ip' => $source_ip,
                 'payload'   => $payload,
             ],
@@ -208,7 +204,7 @@ class WebhookHandler
             // action drives the decision — see {@see RetryQueue::should_schedule}.
             // Simulator payloads never enter the retry queue (the order ids
             // are synthesized) so local debugging doesn't pollute the AS table.
-            if (! $is_simulated) {
+            if (! $trusted_simulation) {
                 RetryQueue::maybe_schedule($dispatch ?? [], $payload, 1, $logger);
             }
         }
@@ -217,7 +213,7 @@ class WebhookHandler
             'status' => 200,
             'body'   => [
                 'received'  => true,
-                'simulated' => $is_simulated,
+                'simulated' => $trusted_simulation,
                 'event'     => null !== $event ? $event->value : null,
                 'reference' => '' === $reference ? null : $reference,
                 'dispatch'  => $dispatch,
@@ -225,19 +221,6 @@ class WebhookHandler
         ];
     }
 
-    /**
-     * @param array<string,string> $headers
-     */
-    private static function is_simulated(array $headers, bool $is_sandbox): bool
-    {
-        if (! $is_sandbox) {
-            return false; // Hard rule: simulator bypass is never allowed in production.
-        }
-
-        $flag = strtolower(trim($headers[ self::HEADER_SIMULATED ] ?? ''));
-
-        return 'true' === $flag || '1' === $flag || 'yes' === $flag;
-    }
 
     /**
      * @param array<string,mixed> $payload

@@ -10,11 +10,18 @@
 .wc-maya-key-wrap input.wc-maya-key-input {
   flex: 1 1 auto;
   min-width: 280px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .wc-maya-toggle-key {
   min-width: 60px;
+}
+
+.wc-maya-key-wrap input.wc-maya-key-input,
+.wc-maya-webhook-url input,
+.wc-maya-capture-panel .wc-maya-amount-authorized,
+.wc-maya-capture-panel .wc-maya-amount-captured,
+.wc-maya-capture-panel .wc-maya-amount-remaining {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 #wc-maya-test-connection-spinner.spinner {
@@ -39,12 +46,14 @@
   padding: 0;
 }
 
-#wc-maya-test-connection-result .wc-maya-probe.wc-maya-ok {
+#wc-maya-test-connection-result .wc-maya-probe.wc-maya-ok,
+.wc-maya-capture-result .wc-maya-ok {
   color: #1e7e34;
 }
 
 #wc-maya-test-connection-result .wc-maya-probe.wc-maya-error,
-#wc-maya-test-connection-result p.wc-maya-error {
+#wc-maya-test-connection-result p.wc-maya-error,
+.wc-maya-capture-result .wc-maya-error {
   color: #b32d2e;
 }
 
@@ -58,7 +67,6 @@
 .wc-maya-webhook-url input {
   flex: 1 1 auto;
   min-width: 320px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   background: #f6f7f7;
 }
 
@@ -69,7 +77,6 @@
 .wc-maya-capture-panel .wc-maya-amount-authorized,
 .wc-maya-capture-panel .wc-maya-amount-captured,
 .wc-maya-capture-panel .wc-maya-amount-remaining {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   margin-right: 12px;
 }
 .wc-maya-capture-form {
@@ -77,10 +84,4 @@
   align-items: center;
   gap: 8px;
   margin: 8px 0;
-}
-.wc-maya-capture-result .wc-maya-ok {
-  color: #007017;
-}
-.wc-maya-capture-result .wc-maya-error {
-  color: #b32d2e;
 }

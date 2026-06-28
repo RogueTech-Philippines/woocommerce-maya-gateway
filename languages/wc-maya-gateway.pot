@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WooCommerce Maya Gateway 1.0.0\n"
 "Report-Msgid-Bugs-To: https://github.com/TaniKyuun/woocommerce-maya-gateway/issues\n"
-"POT-Creation-Date: 2026-05-26 08:57+0000\n"
+"POT-Creation-Date: 2026-06-26 22:38+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -12,7 +12,7 @@ msgstr ""
 "X-Generator: bin/make-pot.php (wc-maya-gateway)\n"
 "X-Domain: wc-maya-gateway\n"
 
-#: src/Gateway/MayaGateway.php:238
+#: src/Gateway/MayaGateway.php:252
 msgid "%d webhook registered with Maya."
 msgid_plural "%d webhooks registered with Maya."
 msgstr[0] ""
@@ -70,7 +70,7 @@ msgstr ""
 msgid "Capture amount must be greater than zero."
 msgstr ""
 
-#: src/Admin/AdminAssets.php:79
+#: src/Admin/AdminAssets.php:78
 msgid "Capture submitted. Webhook will confirm the new balance."
 msgstr ""
 
@@ -78,7 +78,7 @@ msgstr ""
 msgid "Captured:"
 msgstr ""
 
-#: src/Admin/AdminAssets.php:78
+#: src/Admin/AdminAssets.php:77
 msgid "Capturing…"
 msgstr ""
 
@@ -112,10 +112,6 @@ msgstr ""
 msgid "Created"
 msgstr ""
 
-#: src/Gateway/ReturnHandler.php:68
-msgid "Customer returned from Maya checkout. Awaiting webhook confirmation."
-msgstr ""
-
 #: src/Admin/FormFields.php:83
 msgid "Debug log"
 msgstr ""
@@ -126,6 +122,10 @@ msgstr ""
 
 #: src/Admin/FieldRenderers.php:199
 msgid "Disabled — the simulator is sandbox-only. Toggle \"Sandbox mode\" above to enable it."
+msgstr ""
+
+#: src/Admin/FieldRenderers.php:233
+msgid "Dispatches a forged Maya payload through the webhook pipeline in-process. No Maya account is touched. Check WooCommerce → Status → Logs (source: wc-maya-gateway) to see what was dispatched."
 msgstr ""
 
 #: src/Admin/FormFields.php:30
@@ -179,7 +179,6 @@ msgstr ""
 msgid "Level"
 msgstr ""
 
-#: src/Admin/AdminAssets.php:77
 #: src/Admin/FieldRenderers.php:150
 msgid "Loading…"
 msgstr ""
@@ -225,15 +224,15 @@ msgstr ""
 msgid "Maya Checkout secret key (pair of the public key above). Used to manage webhooks at /checkout/v1/webhooks. Note: the Payment Vault product has separate keys at /payments/v1/* and is not used here. Never expose this on the frontend."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:136
-msgid "Maya PAYMENT_SUCCESS webhook arrived with a mismatched amount (expected %1$s, received %2$s). Order state left unchanged for manual review."
+#: src/Webhook/EventDispatcher.php:152
+msgid "Maya PAYMENT_SUCCESS webhook arrived with a mismatched amount/currency (expected %1$s %3$s, received %2$s %4$s). Order state left unchanged for manual review."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:317
+#: src/Webhook/EventDispatcher.php:336
 msgid "Maya authorization failed."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:295
+#: src/Webhook/EventDispatcher.php:314
 msgid "Maya authorized the payment. Use the Capture panel on this order to capture funds."
 msgstr ""
 
@@ -273,15 +272,15 @@ msgstr ""
 msgid "Maya no longer permits voiding this authorization (it likely expired or was captured)."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:247
+#: src/Webhook/EventDispatcher.php:267
 msgid "Maya partial capture confirmed: %1$s of %2$s captured. Order will complete when the remaining balance is captured."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:316
+#: src/Webhook/EventDispatcher.php:335
 msgid "Maya payment expired."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:318
+#: src/Webhook/EventDispatcher.php:337
 msgid "Maya payment failed."
 msgstr ""
 
@@ -297,7 +296,7 @@ msgstr ""
 msgid "Maya refund partially failed at %1$s: %2$s. Check the Maya dashboard for the authoritative state."
 msgstr ""
 
-#: src/Gateway/ReturnHandler.php:55
+#: src/Gateway/ReturnHandler.php:53
 msgid "Maya reported the payment did not complete. Please try again."
 msgstr ""
 
@@ -454,7 +453,7 @@ msgstr ""
 msgid "Save the form first if you just changed it — this URL is rendered from saved settings."
 msgstr ""
 
-#: src/Gateway/MayaGateway.php:202
+#: src/Gateway/MayaGateway.php:216
 msgid "Saved. Add both Maya API keys to register webhooks automatically."
 msgstr ""
 
@@ -471,10 +470,6 @@ msgstr ""
 msgid "Secret key"
 msgstr ""
 
-#: src/Admin/FieldRenderers.php:233
-msgid "Sends a forged Maya payload to this site's webhook endpoint with the X-Simulated-Webhook bypass header. The receiver still parses + logs the event; no Maya account is touched. Check WooCommerce → Status → Logs (source: wc-maya-gateway) to see what would have been dispatched."
-msgstr ""
-
 #: src/Admin/AdminAssets.php:60
 msgid "Show"
 msgstr ""
@@ -487,7 +482,7 @@ msgstr ""
 msgid "Simulate webhook (sandbox only)"
 msgstr ""
 
-#: src/Webhook/Simulator.php:54
+#: src/Webhook/Simulator.php:49
 msgid "Simulator can only run in sandbox mode."
 msgstr ""
 
@@ -528,7 +523,7 @@ msgstr ""
 msgid "Title shown to customers during checkout."
 msgstr ""
 
-#: src/Gateway/PaymentProcessor.php:66
+#: src/Gateway/PaymentProcessor.php:76
 msgid "Unable to start the Maya payment: %s"
 msgstr ""
 
@@ -536,7 +531,7 @@ msgstr ""
 msgid "Unexpected response from the server."
 msgstr ""
 
-#: src/Webhook/Simulator.php:63
+#: src/Webhook/Simulator.php:58
 msgid "Unsupported simulator status \"%s\"."
 msgstr ""
 
@@ -556,11 +551,11 @@ msgstr ""
 msgid "Webhook URL to register"
 msgstr ""
 
-#: src/Gateway/MayaGateway.php:217
+#: src/Gateway/MayaGateway.php:231
 msgid "Webhook registration failed: %s"
 msgstr ""
 
-#: src/Gateway/MayaGateway.php:228
+#: src/Gateway/MayaGateway.php:242
 msgid "Webhook registration partially succeeded — %1$d created; errors: %2$s"
 msgstr ""
 

@@ -42,10 +42,9 @@ under [docs/rebuild-overview/](docs/rebuild-overview/) for the full story.
   (order-not-found at webhook time, Maya lookup error in the manual-
   capture branch) are replayed up to four times with exponential
   backoff (1m / 4m / 16m / 64m).
-- **Webhook simulator** (sandbox-only). Admin button POSTs a forged
-  signed payload to our own endpoint with a bypass header so local
-  development without a public tunnel still exercises the dispatch
-  pipeline.
+- **Webhook simulator** (sandbox-only). Admin button dispatches a forged
+  payload through the webhook pipeline in-process, so local development
+  can exercise dispatch without a public tunnel or public bypass header.
 - **Test connection** probe — creates a small sandbox checkout session
   and verifies the secret key can list webhooks, end-to-end, before the
   merchant fires their first real order.
@@ -69,7 +68,7 @@ under [docs/rebuild-overview/](docs/rebuild-overview/) for the full story.
 
 - PHP **8.3+** (uses `final readonly` classes, enums with helpers, match,
   constructor promotion).
-- WordPress **6.7+**.
+- WordPress **7.0+**.
 - WooCommerce **10.6+**, tested up to **10.7**.
 
 ### Migration from `wc-maya-payment-gateway`

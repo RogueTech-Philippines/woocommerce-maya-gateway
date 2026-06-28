@@ -142,7 +142,7 @@ final class EventLogPage
             return [];
         }
 
-        $raw = (array) wp_unslash($_GET['maya_log_levels']); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $raw = array_map('sanitize_key', (array) wp_unslash($_GET['maya_log_levels'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $out = [];
         foreach ($raw as $value) {
             $value = is_string($value) ? strtolower(sanitize_key($value)) : '';
@@ -158,7 +158,7 @@ final class EventLogPage
         if (! isset($_GET['maya_log_search'])) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
             return '';
         }
-        return trim((string) wp_unslash($_GET['maya_log_search'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        return trim(sanitize_text_field(wp_unslash($_GET['maya_log_search']))); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
     }
 
     private static function log_directory(): string

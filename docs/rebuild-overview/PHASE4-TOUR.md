@@ -84,10 +84,10 @@ Act 2 — customer return (UNTRUSTED)
     GET ?wc-api=maya_return&order=<id>&status=success
         └── ReturnHandler::handle()
                 ├── if status=failed → notice + back to payment page
-                ├── else → flip pending→processing (with note)
-                ├── empty cart
+                ├── else → empty cart
                 └── redirect to get_checkout_order_received_url()
-    Customer sees "Thanks, your order is being processed."
+    Customer sees the order-received page while the signed webhook owns
+    the payment status.
 
 Act 3 — webhook (AUTHORITATIVE, asynchronous)
     POST /wp-json/wc-maya/v1/webhook   (signed, verified)
@@ -101,10 +101,10 @@ Act 3 — webhook (AUTHORITATIVE, asynchronous)
 ```
 
 Act 2 is **deliberately weak** — the customer's browser is untrusted.
-`ReturnHandler` never promotes the order past `processing`. The
-authoritative state change is in Act 3, where the signed-by-Maya payload
-goes through the full verification pipeline before any `payment_complete()`
-fires. A forged return URL can't promote an order to `completed`.
+`ReturnHandler` never mutates the order status. The authoritative state
+change is in Act 3, where the signed-by-Maya payload goes through the full
+verification pipeline before any `payment_complete()` fires. A forged return
+URL can't promote an order.
 
 ---
 
@@ -160,15 +160,12 @@ Reads `?order=<id>&status=success|failed`, validates, and either:
 
 - **`status=failed`** → adds a customer notice, redirects to the order's
   checkout payment URL so they can retry without losing context.
-- **`status=success` (or absent)** → flips `pending`/`on-hold`/`failed`
-  orders to `processing` (with a note that the webhook will confirm),
-  empties the cart, redirects to the order-received page.
+- **`status=success` (or absent)** → empties the cart, redirects to the
+  order-received page.
 
-The `pending|on-hold|failed` gate is important: by the time the customer
-returns, the webhook may have already arrived and promoted the order to
-`processing` or even `completed`. We don't want the return handler to
-*downgrade* a webhook-completed order back to `processing`. `has_status()`
-narrows the flip to only states where promotion is the right answer.
+Return handling is intentionally status-free. By the time the customer
+returns, the webhook may have already arrived and promoted the order; by
+itself, a browser return is not proof of payment.
 
 ### 4.3 `Webhook/EventDispatcher`
 
@@ -336,9 +333,8 @@ return [
    any future expiry, any CVC), clicks Pay.
 6. Maya processes the payment, redirects browser back to
    `https://your-site.com/?wc-api=maya_return&order=123&status=success`.
-7. `ReturnHandler::handle()` flips order to `processing` with a note
-   "Customer returned from Maya checkout. Awaiting webhook confirmation."
-   Cart is emptied. Browser redirects to the order-received page.
+7. `ReturnHandler::handle()` empties the cart and redirects the browser to
+   the order-received page.
 8. Independently, Maya's webhook server POSTs the signed payload to
    `https://your-site.com/?wc-api=maya_webhook` (or the REST endpoint).
 9. `WebhookHandler::process()` runs the Phase 2 verification pipeline.

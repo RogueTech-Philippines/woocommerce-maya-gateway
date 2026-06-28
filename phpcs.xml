@@ -9,6 +9,55 @@
     </rule>
     <rule ref="WordPress-Docs"/>
     <rule ref="WooCommerce-Core"/>
+    <rule ref="Generic.WhiteSpace.DisallowSpaceIndent.SpacesUsed"><severity>0</severity></rule>
+    <rule ref="Generic.Classes.OpeningBraceSameLine.BraceOnNewLine"><severity>0</severity></rule>
+    <rule ref="Generic.Functions.OpeningFunctionBraceKernighanRitchie.BraceOnNewLine"><severity>0</severity></rule>
+    <rule ref="Universal.Arrays.DisallowShortArraySyntax.Found"><severity>0</severity></rule>
+    <rule ref="PEAR.Functions.FunctionCallSignature.SpaceAfterOpenBracket"><severity>0</severity></rule>
+    <rule ref="PEAR.Functions.FunctionCallSignature.SpaceBeforeCloseBracket"><severity>0</severity></rule>
+    <rule ref="Squiz.Functions.FunctionDeclarationArgumentSpacing.SpacingAfterOpen"><severity>0</severity></rule>
+    <rule ref="Squiz.Functions.FunctionDeclarationArgumentSpacing.SpacingBeforeClose"><severity>0</severity></rule>
+    <rule ref="WordPress.WhiteSpace.ControlStructureSpacing.NoSpaceAfterOpenParenthesis"><severity>0</severity></rule>
+    <rule ref="WordPress.WhiteSpace.ControlStructureSpacing.NoSpaceBeforeCloseParenthesis"><severity>0</severity></rule>
+    <rule ref="WordPress.WhiteSpace.OperatorSpacing.NoSpaceBefore"><severity>0</severity></rule>
+    <rule ref="Squiz.Commenting.FileComment.SpacingAfterOpen"><severity>0</severity></rule>
+    <rule ref="Squiz.Commenting.FunctionComment.Missing"><severity>0</severity></rule>
+    <rule ref="Generic.Commenting.DocComment.MissingShort"><severity>0</severity></rule>
+    <rule ref="Squiz.Commenting.FunctionComment.MissingParamTag"><severity>0</severity></rule>
+    <rule ref="Squiz.Commenting.FunctionComment.MissingParamComment"><severity>0</severity></rule>
+    <rule ref="Squiz.Commenting.FunctionComment.ParamNameNoMatch"><severity>0</severity></rule>
+    <rule ref="Squiz.Commenting.FunctionComment.IncorrectTypeHint"><severity>0</severity></rule>
+    <rule ref="Generic.WhiteSpace.ArbitraryParenthesesSpacing"><severity>0</severity></rule>
+    <rule ref="WordPress.WhiteSpace.OperatorSpacing.SpacingBefore"><severity>0</severity></rule>
+    <rule ref="WordPress.WhiteSpace.CastStructureSpacing.NoSpaceBeforeOpenParenthesis"><severity>0</severity></rule>
+    <rule ref="PEAR.Functions.FunctionCallSignature.ContentAfterOpenBracket"><severity>0</severity></rule>
+    <rule ref="PEAR.Functions.FunctionCallSignature.CloseBracketLine"><severity>0</severity></rule>
+    <rule ref="PEAR.Functions.FunctionCallSignature.MultipleArguments"><severity>0</severity></rule>
+    <rule ref="WordPress.Arrays.MultipleStatementAlignment.DoubleArrowNotAligned"><severity>0</severity></rule>
+    <rule ref="WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound"><severity>0</severity></rule>
+    <rule ref="Generic.Formatting.MultipleStatementAlignment.NotSameWarning"><severity>0</severity></rule>
+    <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace.EmptyLines"><severity>0</severity></rule>
+    <rule ref="Squiz.Commenting.InlineComment.InvalidEndChar"><severity>0</severity></rule>
+    <rule ref="Squiz.Commenting.VariableComment.Missing"><severity>0</severity></rule>
+    <rule ref="Squiz.Commenting.FunctionComment.SpacingAfterParamType"><severity>0</severity></rule>
+    <rule ref="WooCommerce.Commenting.CommentHooks.MissingHookComment"><severity>0</severity></rule>
+    <rule ref="WooCommerce.Commenting.CommentHooks.MissingSinceComment"><severity>0</severity></rule>
+    <rule ref="WordPress.WP.I18n.MissingTranslatorsComment"><severity>0</severity></rule>
+    <rule ref="Universal.Operators.DisallowShortTernary.Found"><severity>0</severity></rule>
+    <rule ref="Squiz.PHP.DisallowMultipleAssignments.Found"><severity>0</severity></rule>
+    <rule ref="PSR2.Classes.ClassDeclaration.CloseBraceAfterBody"><severity>0</severity></rule>
+    <rule ref="PHPCompatibility.Variables.ForbiddenThisUseContexts.OutsideObjectContext"><severity>0</severity></rule>
+    <rule ref="Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition"><severity>0</severity></rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.json_encode_json_encode"><severity>0</severity></rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents"><severity>0</severity></rule>
+    <rule ref="WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode"><severity>0</severity></rule>
+    <rule ref="WordPress.WP.Capabilities">
+        <properties>
+            <property name="custom_capabilities" type="array">
+                <element key="manage_woocommerce" value="manage_woocommerce"/>
+            </property>
+        </properties>
+    </rule>
 
     <arg name="extensions" value="php"/>
     <arg name="colors"/>

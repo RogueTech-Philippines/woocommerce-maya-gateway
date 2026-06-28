@@ -149,7 +149,7 @@ Receive and verify, but don't yet dispatch business logic.
 - `PayloadFlattener` — recursive `key.subkey=value` flatten + ASCII sort + `&`-join + `&nonce=...` suffix. Pure function, unit-tested with golden samples (capture real samples from a sandbox tx, store as fixtures).
 - `SignatureVerifier` — calls `openssl_verify(..., 'sha256WithRSAEncryption')`, returns bool. `TimestampVerifier` (±300s). `IpAllowlist`.
 - `WebhookHandler` becomes a REST route `/wp-json/wc-maya/v1/webhook` (POST) + a `wc-api=maya_webhook` shim. Both call the same handler. Verification runs first; on success the parsed event is logged and a 200 returned. **No order updates yet.**
-- `Simulator` exposed via an admin button "Simulate webhook" with status options (success/failed/expired) and a target order — POSTs a forged payload to our own endpoint with `X-Simulated-Webhook: true` bypass.
+- `Simulator` exposed via an admin button "Simulate webhook" with status options (success/failed/expired) and a target order — dispatches a forged sandbox payload through `WebhookHandler::process(..., trusted_simulation: true)` in-process.
 
 **DoD:** Fire a sandbox payment → see "would dispatch `PAYMENT_SUCCESS` for order N" in the log. Simulate button works locally without tunnel.
 
@@ -187,19 +187,19 @@ client-side AJAX fetch via `Admin/Ajax/RefreshWebhooks`. Full walkthrough:
 The happy path: customer can actually pay with sandbox cards.
 
 - `PaymentProcessor`: builds the full checkout payload (totals, buyer, shipping, items, redirect URLs), calls `Checkouts::create`, persists `_maya_checkout_id`, `_maya_idempotency_key`, returns `result: success, redirect: <Maya URL>`.
-- `ReturnHandler`: on `wc-api=maya_return`, validates the `order` query arg, marks the order `processing` with note "Awaiting webhook confirmation", redirects to `get_checkout_order_received_url()`. Webhook arrives separately and calls `payment_complete()`.
+- `ReturnHandler`: on `wc-api=maya_return`, validates the `order` query arg, sends failed returns back to the payment page, and sends success returns to `get_checkout_order_received_url()` after emptying the cart. Webhook arrives separately and owns the order state change.
 - `EventDispatcher` now wires up: `PAYMENT_SUCCESS` (matching amount) → `payment_complete($paymentId)`. `PAYMENT_FAILED` / `PAYMENT_EXPIRED` / `AUTH_FAILED` → `update_status('failed')`. Amount mismatch → log error, leave order alone.
 - `MayaGateway::process_payment` becomes a one-liner delegating to `PaymentProcessor`.
 
-**DoD:** Sandbox card flow works end-to-end. Order transitions: `pending` → `processing` (return) → `completed` (webhook).
+**DoD:** Sandbox card flow works end-to-end. Order transitions: `pending` → `completed` (webhook).
 
 **Delivered:** 109 tests passing (was 95 → +14), 349 assertions, lint
 clean. `Gateway/PaymentProcessor` composes the full Maya checkout payload
 (shipping-falls-back-to-billing, line items, redirects), calls
 `Checkouts::create`, persists `_maya_checkout_id` + `_maya_idempotency_key`,
 returns the WC `[result, redirect]` tuple. `Gateway/ReturnHandler` handles
-`?wc-api=maya_return`: idempotent flip to `processing` on success, redirect
-to `get_checkout_order_received_url()`; failed → notice + back to payment
+`?wc-api=maya_return`: success drains the cart and redirects to
+`get_checkout_order_received_url()`; failed → notice + back to payment
 page. `Webhook/EventDispatcher` wired into `WebhookHandler::process()` —
 `PAYMENT_SUCCESS` with matching amount → `payment_complete()`; mismatch →
 log + order note + leave alone; `PAYMENT_FAILED` / `PAYMENT_EXPIRED` /
@@ -213,7 +213,7 @@ delegate. Full walkthrough:
 - Add `manual_capture` select to `FormFields` (`none`/`normal`/`final`/`preauthorization`).
 - `PaymentProcessor` honors it: when not `none`, adds `authorizationType: <UPPER>` to the checkout payload and stores `_maya_authorization_type` on the order.
 - `Payments::capture($paymentId, $payload)` endpoint.
-- `Admin/OrderActions/CaptureButton` — adds "Capture" next to the refund button when an `AUTHORIZED + canCapture` payment is found via `Payments::getByRrn`.
+- `Admin/OrderActions/CaptureButton` — adds "Capture" next to the refund button when an authorization record with `canCapture` is found via `Payments::getByRrn`.
 - `Admin/OrderActions/CapturePanel` — replaces the inline `views/manual-capture.php` from the old plugin with a proper template at `templates/admin/capture-panel.php`.
 - `Admin/Ajax/CapturePayment` — receives `order_id + capture_amount`, validates against `amount_authorized - amount_captured`, calls `Payments::capture`. Returns updated balances.
 - `EventDispatcher` extended: for orders with `_maya_authorization_type !== 'none'`, completes only when `amount === capturedAmount`, otherwise just adds a status note.

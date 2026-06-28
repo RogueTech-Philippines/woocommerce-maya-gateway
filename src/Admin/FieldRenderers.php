@@ -230,7 +230,7 @@ class FieldRenderers
 					</div>
 					<div class="description" id="wc-maya-simulate-result" aria-live="polite"></div>
 					<p class="description">
-						<?php esc_html_e('Sends a forged Maya payload to this site\'s webhook endpoint with the X-Simulated-Webhook bypass header. The receiver still parses + logs the event; no Maya account is touched. Check WooCommerce → Status → Logs (source: wc-maya-gateway) to see what would have been dispatched.', 'wc-maya-gateway'); ?>
+						<?php esc_html_e('Dispatches a forged Maya payload through the webhook pipeline in-process. No Maya account is touched. Check WooCommerce → Status → Logs (source: wc-maya-gateway) to see what was dispatched.', 'wc-maya-gateway'); ?>
 					</p>
 				<?php endif; ?>
 			</td>

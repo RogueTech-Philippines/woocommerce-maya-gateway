@@ -18,11 +18,9 @@ use WC_Order;
  *
  * The customer's browser cannot be trusted to report payment outcome — Maya
  * controls the signed webhook for the authoritative signal — so this handler
- * never marks an order "completed". It only flips a still-pending order to
- * "processing" (with a note explaining the webhook will confirm), drains
- * the cart, and forwards to the order-received page. The Phase 4 webhook
- * dispatcher takes it from "processing" to "completed" once Maya's signed
- * notification arrives.
+ * never mutates the order status. A success return only drains the cart and
+ * forwards to the order-received page; the webhook dispatcher owns every
+ * payment state transition.
  *
  * Failure / cancel returns are also handled: a "failed" status redirects
  * back to the payment page so the customer can retry, without flipping the
@@ -60,14 +58,6 @@ class ReturnHandler
             exit;
         }
 
-        // Default to the success path: flip pending → processing if the
-        // webhook hasn't already promoted the order.
-        if ($order->has_status([ 'pending', 'on-hold', 'failed' ])) {
-            $order->update_status(
-                'processing',
-                __('Customer returned from Maya checkout. Awaiting webhook confirmation.', 'wc-maya-gateway'),
-            );
-        }
 
         if (function_exists('WC') && WC()->cart) {
             WC()->cart->empty_cart();

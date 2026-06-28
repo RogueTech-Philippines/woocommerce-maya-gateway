@@ -7,7 +7,7 @@ void / refund, block-based and classic checkout, HPOS, translatable.
 ## Requirements
 
 - PHP **8.3+**
-- WordPress **6.7+**
+- WordPress **7.0+**
 - WooCommerce **10.6+** (tested up to 10.7)
 
 ## Features
@@ -32,9 +32,9 @@ void / refund, block-based and classic checkout, HPOS, translatable.
   level + free-text filters.
 - **Action Scheduler retry** safety net for transient dispatch failures
   (order DB lag, Maya lookup hiccups) with exponential backoff.
-- **Local-dev webhook simulator** — admin button posts a forged signed
-  payload to the local endpoint with a bypass header, so the dispatch
-  pipeline can be exercised without a public tunnel.
+- **Local-dev webhook simulator** — admin button dispatches a forged
+  sandbox payload through the webhook pipeline in-process, so local
+  debugging does not need a public tunnel or verification bypass header.
 - **Test connection** probe — verifies both API keys end-to-end against
   Maya's sandbox before the first real order.
 - **HPOS** (`custom_order_tables`) and `cart_checkout_blocks`
@@ -51,7 +51,7 @@ void / refund, block-based and classic checkout, HPOS, translatable.
 2. WordPress admin → Plugins → Add New → Upload Plugin → choose the zip.
 3. Activate.
 4. WooCommerce → Settings → Payments → **Maya Checkout** → enter your
-   sandbox or production keys, click *Test connection*, then *Save changes*.
+   sandbox or production keys, click _Test connection_, then _Save changes_.
    Saving (with both keys present and the gateway enabled) automatically
    registers the five managed webhooks in your Maya Manager account.
 
@@ -68,18 +68,18 @@ Then activate in WP admin as above.
 
 ## Configuration
 
-| Setting | What it does |
-| --- | --- |
-| **Enable / Disable** | Master switch for the gateway. |
-| **Title / Description** | Shown to the customer on classic + block checkout. |
-| **Sandbox mode** | Toggles between Maya's sandbox (`pg-sandbox.paymaya.com`) and production (`pg.maya.ph`). |
-| **Public key / Secret key** | Checkout-product API keys from Maya Manager → Developers. Sandbox shared keys are documented at developers.maya.ph. |
-| **Test connection** | Creates a small sandbox checkout + lists registered webhooks. Confirms both keys before merchant attempts a real order. |
-| **Debug log** | Writes outgoing requests + successful response bodies to the `wc-maya-gateway` log channel (off by default). |
-| **Manual capture** | Choose `None` for auto-capture, or `NORMAL` / `FINAL` / `PREAUTHORIZATION` to authorize-now-capture-later. |
-| **Local dev webhook URL** | Optional. Public tunnel URL (ngrok / cloudflared) used as the callback host while developing locally. |
-| **Registered webhooks (live)** | Live read-back of every webhook on the Maya account, marked **managed** or **external**. |
-| **Simulate webhook** | Sandbox-only. Posts a forged payload at the local endpoint with a bypass header. |
+| Setting                        | What it does                                                                                                            |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| **Enable / Disable**           | Master switch for the gateway.                                                                                          |
+| **Title / Description**        | Shown to the customer on classic + block checkout.                                                                      |
+| **Sandbox mode**               | Toggles between Maya's sandbox (`pg-sandbox.paymaya.com`) and production (`pg.maya.ph`).                                |
+| **Public key / Secret key**    | Checkout-product API keys from Maya Manager → Developers. Sandbox shared keys are documented at developers.maya.ph.     |
+| **Test connection**            | Creates a small sandbox checkout + lists registered webhooks. Confirms both keys before merchant attempts a real order. |
+| **Debug log**                  | Writes outgoing requests + successful response bodies to the `wc-maya-gateway` log channel (off by default).            |
+| **Manual capture**             | Choose `None` for auto-capture, or `NORMAL` / `FINAL` / `PREAUTHORIZATION` to authorize-now-capture-later.              |
+| **Local dev webhook URL**      | Optional. Public tunnel URL (ngrok / cloudflared) used as the callback host while developing locally.                   |
+| **Registered webhooks (live)** | Live read-back of every webhook on the Maya account, marked **managed** or **external**.                                |
+| **Simulate webhook**           | Sandbox-only. Dispatches a forged payload through the webhook pipeline in-process.                                      |
 
 ## Architecture
 
@@ -129,4 +129,4 @@ LICENSE, CHANGELOG. Dev / docs / tests / bin are excluded.
 
 ## License
 
-GPL-3.0
+GPL-3.0-only

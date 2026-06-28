@@ -158,14 +158,28 @@ test('PAYMENT_EXPIRED and AUTH_FAILED also map to update_status(failed)', functi
     }
 });
 
-test('already-paid orders are skipped (idempotency for webhook retries)', function (): void {
-    $order = wc_maya_mock_order(42, 199.5, is_paid: true);
-    $order->shouldNotReceive('payment_complete');
-    $order->shouldNotReceive('update_status');
+test('checkout failure, dropout, and cancellation use terminal failure handling', function (): void {
+    foreach ([ WebhookEvent::CheckoutFailure, WebhookEvent::CheckoutDropout, WebhookEvent::PaymentCancelled ] as $event) {
+        $order = wc_maya_mock_order(42, 100.0);
+        $order->shouldReceive('update_status')->with('failed', Mockery::type('string'))->once();
 
-    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+        Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
 
-    $result = (new EventDispatcher(new Logger(false)))->dispatch(
+        $result = (new EventDispatcher(new Logger(false)))->dispatch($event, [ 'requestReferenceNumber' => '42' ]);
+
+        expect($result['action'])->toBe('failed');
+        expect($result['event'])->toBe($event->value);
+    }
+});
+
+test('already-paid success retries are skipped, but terminal failures still fail', function (): void {
+    $paid_success = wc_maya_mock_order(42, 199.5, is_paid: true);
+    $paid_success->shouldNotReceive('payment_complete');
+    $paid_success->shouldNotReceive('update_status');
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $paid_success);
+
+    $success_result = (new EventDispatcher(new Logger(false)))->dispatch(
         WebhookEvent::PaymentSuccess,
         [
             'id'                     => 'pay_retry',
@@ -174,7 +188,19 @@ test('already-paid orders are skipped (idempotency for webhook retries)', functi
         ],
     );
 
-    expect($result['action'])->toBe('already_paid');
+    expect($success_result['action'])->toBe('already_paid');
+
+    $paid_failed = wc_maya_mock_order(42, 199.5, is_paid: true);
+    $paid_failed->shouldReceive('update_status')->with('failed', Mockery::type('string'))->once();
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $paid_failed);
+
+    $failed_result = (new EventDispatcher(new Logger(false)))->dispatch(
+        WebhookEvent::PaymentFailed,
+        [ 'requestReferenceNumber' => '42' ],
+    );
+
+    expect($failed_result['action'])->toBe('failed');
 });
 
 test('missing order returns order_not_found without touching anything', function (): void {
@@ -238,11 +264,11 @@ test('AUTHORIZED on a manual-capture order adds a note (no state change)', funct
     expect($result['payment_id'])->toBe('pay_auth_1');
 });
 
-function wc_maya_authorization_record(float $authorized, float $captured, string $id = 'auth_1'): PaymentRecord
+function wc_maya_authorization_record(float $authorized, float $captured, string $id = 'auth_1', string $status = 'AUTHORIZED'): PaymentRecord
 {
     return new PaymentRecord(
         id: $id,
-        status: 'AUTHORIZED',
+        status: $status,
         amount: new Money($authorized, 'PHP'),
         captured_amount: new Money($captured, 'PHP'),
         request_reference_number: '42',
@@ -263,7 +289,7 @@ test('PAYMENT_SUCCESS on manual-capture: full capture promotes to payment_comple
 
     $payments = Mockery::mock(Payments::class);
     $payments->expects('get_by_rrn')->with('42')->andReturn([
-        wc_maya_authorization_record(199.5, 199.5),
+        wc_maya_authorization_record(199.5, 199.5, status: 'CAPTURED'),
     ]);
 
     $result = (new EventDispatcher(new Logger(false), $payments))->dispatch(
@@ -291,7 +317,7 @@ test('PAYMENT_SUCCESS on manual-capture: partial capture adds a note, no status 
 
     $payments = Mockery::mock(Payments::class);
     $payments->expects('get_by_rrn')->with('42')->andReturn([
-        wc_maya_authorization_record(199.5, 50.0),
+        wc_maya_authorization_record(199.5, 50.0, status: 'CAPTURED'),
     ]);
 
     $result = (new EventDispatcher(new Logger(false), $payments))->dispatch(

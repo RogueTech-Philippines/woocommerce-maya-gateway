@@ -37,12 +37,11 @@ use WP_Error;
  *    otherwise add a partial-capture note and keep the order in
  *    `processing`. Each successive capture re-fires this branch until the
  *    last one promotes the order.
- *  - `AUTHORIZED` on a manual-capture order: add a "authorized, awaiting
- *    capture" note (no state change — the order's already in `processing`
- *    via the ReturnHandler).
- *  - `PAYMENT_FAILED` / `PAYMENT_EXPIRED` / `AUTH_FAILED` →
+ *  - `AUTHORIZED` on a manual-capture order: add an "authorized, awaiting
+ *    capture" note (no state change).
+ *  - `PAYMENT_FAILED` / `PAYMENT_EXPIRED` / `PAYMENT_CANCELLED` /
+ *    `CHECKOUT_FAILURE` / `CHECKOUT_DROPOUT` / `AUTH_FAILED` →
  *    `update_status('failed')`.
- *  - Anything else (CHECKOUT_*) → log + skip.
  */
 class EventDispatcher
 {
@@ -80,6 +79,10 @@ class EventDispatcher
             return [ 'action' => 'order_not_found', 'reference' => (string) $reference ];
         }
 
+        if ($event->is_terminal_failure()) {
+            return $this->mark_failed($order, $event);
+        }
+
         // Idempotency: webhooks retry. Once an order is paid we don't want a
         // second PAYMENT_SUCCESS retry to re-trigger payment_complete (which
         // would fire `woocommerce_payment_complete` again and produce
@@ -104,9 +107,6 @@ class EventDispatcher
             return $this->note_authorized($order, $payload);
         }
 
-        if (in_array($event, [ WebhookEvent::PaymentFailed, WebhookEvent::PaymentExpired, WebhookEvent::AuthFailed ], true)) {
-            return $this->mark_failed($order, $event);
-        }
 
         $this->logger->info('EventDispatcher: event ignored at this phase.', [
             'order_id' => $order->get_id(),
@@ -291,7 +291,7 @@ class EventDispatcher
     private static function find_authorization_record(array $records): ?PaymentRecord
     {
         foreach ($records as $record) {
-            if ('AUTHORIZED' === $record->status) {
+            if ($record->is_authorization()) {
                 return $record;
             }
         }
@@ -299,9 +299,8 @@ class EventDispatcher
     }
 
     /**
-     * AUTHORIZED webhook on a manual-capture order: just record the note so
-     * the merchant sees the auth landed. The order is already in
-     * `processing` from the ReturnHandler.
+     * AUTHORIZED webhook on a manual-capture order: record the note so the
+     * merchant sees the auth landed.
      *
      * @param array<string,mixed> $payload
      *

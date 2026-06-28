@@ -166,7 +166,7 @@ problem. The two real-world cases:
    read-replica. Race window is tiny but non-zero.
 2. **`Payments::get_by_rrn` errored mid-dispatch.** The manual-capture
    branch of `EventDispatcher::dispatch` looks up the authoritative
-   AUTHORIZED record before deciding whether `capturedAmount` covers
+   authorization record before deciding whether `capturedAmount` covers
    the authorized total. If that call hits a 5xx or timeout, the
    webhook can't be completed *now* — but will likely succeed in 60
    seconds.

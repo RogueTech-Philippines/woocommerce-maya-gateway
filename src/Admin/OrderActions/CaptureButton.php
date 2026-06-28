@@ -21,8 +21,8 @@ use WC_Order;
  *
  *  - the order's payment method is Maya, AND
  *  - the saved `_maya_authorization_type` is a manual-capture mode, AND
- *  - Maya reports at least one `AUTHORIZED + canCapture: true` payment for
- *    the order's RRN.
+ *  - Maya reports at least one authorization record with `canCapture: true`
+ *    for the order's RRN.
  *
  * The synchronous Maya lookup is acceptable because the order-edit screen
  * is already a heavyweight admin page and merchants reach it infrequently.

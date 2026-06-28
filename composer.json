@@ -2,7 +2,7 @@
   "name": "tanikyuun/woocommerce-maya-gateway",
   "description": "Maya payment gateway for WooCommerce — modern rewrite",
   "type": "wordpress-plugin",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "require": {
     "php": ">=8.3"
   },

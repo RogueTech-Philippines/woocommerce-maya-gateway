@@ -3,7 +3,7 @@
 Status: **DONE** (2026-05-26).
 
 > Receive Maya's server-to-server callbacks, verify them, and log what we
-> *would* have dispatched — without yet touching any WooCommerce orders.
+> _would_ have dispatched — without yet touching any WooCommerce orders.
 
 This is a delta tour. It assumes you've read
 [PHASE1-TOUR.md](PHASE1-TOUR.md) (vocabulary, plugin loading, value objects,
@@ -74,28 +74,27 @@ tests/Unit/Webhook/
 ## 3. The shape of Maya's webhook
 
 Quick refresher. When a payment changes state, Maya's servers POST JSON to
-the URL we registered with them. The request includes three load-bearing
+the URL we registered with them. The request includes two load-bearing
 HTTP headers:
 
-| Header                          | What it carries |
-| ---                             | --- |
-| `X-Maya-Webhook-Timestamp`      | Epoch milliseconds when Maya signed the payload. We reject anything older or newer than ±300s. |
-| `X-Maya-Webhook-Signature`      | Two comma-separated key=value pairs: `nonce=<random>,v1=<hex-rsa-sha256>`. The `v1` value is the hex-encoded RSA-SHA256 signature over the canonicalized payload + nonce. |
-| `X-Simulated-Webhook` (ours)    | Local-dev escape hatch — see [§9](#9-the-simulator--end-to-end-walkthrough). Honored only in sandbox mode. |
+| Header                     | What it carries                                                                                                                                                           |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `X-Maya-Webhook-Timestamp` | Epoch milliseconds when Maya signed the payload. We reject anything older or newer than ±300s.                                                                            |
+| `X-Maya-Webhook-Signature` | Two comma-separated key=value pairs: `nonce=<random>,v1=<hex-rsa-sha256>`. The `v1` value is the hex-encoded RSA-SHA256 signature over the canonicalized payload + nonce. |
 
 The body is JSON. The fields we care about right now:
 
 ```json
 {
-    "id":                     "pay_abc123",
-    "status":                 "PAYMENT_SUCCESS",
-    "requestReferenceNumber": "42",
-    "amount":                 199.50,
-    "currency":               "PHP",
-    "isPaid":                 true,
-    "canVoid":                false,
-    "canRefund":              true,
-    "canCapture":             false
+  "id": "pay_abc123",
+  "status": "PAYMENT_SUCCESS",
+  "requestReferenceNumber": "42",
+  "amount": 199.5,
+  "currency": "PHP",
+  "isPaid": true,
+  "canVoid": false,
+  "canRefund": true,
+  "canCapture": false
 }
 ```
 
@@ -124,10 +123,9 @@ POST  /wp-json/wc-maya/v1/webhook                 POST  /?wc-api=maya_webhook
                          └─ 5. WebhookEvent::try_from_string()     → 200 + log "would dispatch X for order Y"
 ```
 
-The whole pipeline is shaped so that **steps 2–4 short-circuit** if the
-caller sets `X-Simulated-Webhook: true` *and* the gateway is in sandbox
-mode. That's the only way to bypass verification; production never reads
-the header.
+The admin simulator no longer exposes an HTTP bypass header. It calls
+`WebhookHandler::process(..., trusted_simulation: true)` in-process after
+the sandbox-only AJAX gate, so public webhook requests always run steps 2–4.
 
 ---
 
@@ -137,7 +135,7 @@ the header.
 
 Two RSA public keys per environment, copied verbatim from Maya's developer
 docs (and from the legacy plugin's lines 39-87). Verification accepts a
-match against *any* key in the bundle so Maya can rotate one without
+match against _any_ key in the bundle so Maya can rotate one without
 breaking us.
 
 ```php
@@ -151,7 +149,7 @@ public static function for_environment(bool $is_sandbox): array
 ```
 
 Test (`PublicKeyBundleTest`) asserts the bundle has two PEMs per environment
-*and* that each one is parseable by `openssl_pkey_get_public()` so a
+_and_ that each one is parseable by `openssl_pkey_get_public()` so a
 stray whitespace/newline bug doesn't ship.
 
 ### 5.2 `PayloadFlattener`
@@ -177,7 +175,7 @@ $flat = PayloadFlattener::flatten(
 ```
 
 Why centralize this so aggressively? Because the flattener is the
-single load-bearing piece that determines whether *every* signature check
+single load-bearing piece that determines whether _every_ signature check
 passes or fails. A one-character difference in encoding — sorting wrong,
 including empties, forgetting the nonce suffix, lowercase vs. uppercase
 booleans — silently breaks everything. The pure function makes it trivial
@@ -200,13 +198,13 @@ fields → nulls; trims whitespace; rejects empty values) are directly
 testable.
 
 Test approach worth calling out: `SignatureVerifierTest` generates a
-fresh 2048-bit RSA keypair *inside the test* via `openssl_pkey_new`, signs
+fresh 2048-bit RSA keypair _inside the test_ via `openssl_pkey_new`, signs
 the canonical payload with the private half, and verifies with the public
 half. It's a real cryptographic round-trip, not a mock — so any regression
 in the flatten ↔ verify contract fails the test immediately.
 
 Two defensive checks live in the verifier: hex strings of odd length or
-non-hex characters return false *before* `hex2bin` is called, because
+non-hex characters return false _before_ `hex2bin` is called, because
 PHP 8.3 emits a warning that Pest's strict mode treats as a failure.
 
 ### 5.4 `TimestampVerifier`
@@ -253,7 +251,7 @@ public static function register(): void
 - `handle_rest(WP_REST_Request)` / `handle_wc_api()` are thin entrypoints
   that normalize headers + body and delegate.
 - `process(string $body, array $headers, string $source_ip, bool $is_sandbox,
-  Logger $logger, ?SignatureVerifier $verifier = null): array` is the
+Logger $logger, ?SignatureVerifier $verifier = null): array` is the
   pure-ish core that runs every check and returns `[status, body]`.
 
 That last optional `?SignatureVerifier $verifier` is an injection seam used
@@ -277,25 +275,25 @@ self-sufficient.
 ```php
 public function simulate(WC_Order $order, string $status): array|WP_Error
 {
-    $payload  = self::build_payload($order, $status);
-    $response = wp_remote_post(
-        $this->settings->webhook_url(),
-        [
-            'headers' => [
-                'Content-Type'                   => 'application/json',
-                WebhookHandler::HEADER_SIMULATED => 'true',
-            ],
-            'body' => wp_json_encode($payload),
-        ],
+    $body = (string) wp_json_encode(self::build_payload($order, $status));
+
+    return WebhookHandler::process(
+        $body,
+        [],
+        '127.0.0.1',
+        true,
+        new Logger(true),
+        null,
+        null,
+        true,
     );
-    /* … wrap in {status, body} tuple … */
 }
 ```
 
-Posts a forged Maya payload at *our own* webhook URL with the bypass
-header set. The handler still parses + logs the event — the only steps
-that get skipped are timestamp/signature/IP. The simulator's return
-value carries the actual HTTP status the handler emitted, so the
+Builds a forged Maya payload and dispatches it through the same handler
+in-process with `trusted_simulation: true`. The handler still parses, logs,
+and dispatches the event — the only skipped steps are timestamp/signature/IP.
+The simulator's return value carries the handler status/body tuple, so the
 admin sees exactly what the handler decided.
 
 `Simulator::ALLOWED_STATUSES` whitelists `PAYMENT_SUCCESS`,
@@ -322,15 +320,15 @@ nonce) before calling `Simulator::simulate()`.
 
 ## 7. Anti-patterns deliberately avoided
 
-| Tempted to | Why we didn't |
-| --- | --- |
-| Build an in-memory event dispatcher now | Phase 4's job. The "would dispatch X for order Y" log line is the DoD-required surface for this phase; building the dispatcher early would force scope decisions before we have the matching tests. |
-| Make `WebhookHandler::process()` look up the order via `wc_get_order()` | Same reasoning — Phase 4 owns the WC-side mutations. Phase 2 stops at parsing + logging. |
-| Inline the verification logic in `WebhookHandler` instead of splitting into primitives | Each primitive (flattener, signature, timestamp, IP, key bundle) has a different reason to change. Splitting them lets the unit tests pin each contract independently — when Maya rotates a key, only `PublicKeyBundle` moves. |
-| Trust `$_SERVER['REMOTE_ADDR']` unconditionally | Production sites are behind Cloudflare / load balancers; the real client IP is in `X-Forwarded-For` or `CF-Connecting-IP`. `IpAllowlist::get_source_ip()` walks the chain. |
-| Honor `X-Simulated-Webhook` in production | The simulator is local-dev only. The handler short-circuits the check the moment `is_sandbox` is false — even with the header set, production webhooks fall through to the real signature/timestamp/IP gates. |
-| Lift the existing `WebhookHandler::SANDBOX_IPS` / `PRODUCTION_IPS` constants and keep the old constant locations | They're already moved into `IpAllowlist`. The handler tests that previously checked `WebhookHandler::SANDBOX_IPS` now live in `IpAllowlistTest`. Re-exporting old constants would defeat the split. |
-| Add a config field for "tolerance window seconds" | The 300s window is documented by Maya and matches the legacy plugin. Adding configurability invites pin-and-drift bugs. Hardcoded constant; trivial to find if Maya ever changes it. |
+| Tempted to                                                                                                       | Why we didn't                                                                                                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build an in-memory event dispatcher now                                                                          | Phase 4's job. The "would dispatch X for order Y" log line is the DoD-required surface for this phase; building the dispatcher early would force scope decisions before we have the matching tests.                                   |
+| Make `WebhookHandler::process()` look up the order via `wc_get_order()`                                          | Same reasoning — Phase 4 owns the WC-side mutations. Phase 2 stops at parsing + logging.                                                                                                                                              |
+| Inline the verification logic in `WebhookHandler` instead of splitting into primitives                           | Each primitive (flattener, signature, timestamp, IP, key bundle) has a different reason to change. Splitting them lets the unit tests pin each contract independently — when Maya rotates a key, only `PublicKeyBundle` moves.        |
+| Trust `$_SERVER['REMOTE_ADDR']` unconditionally                                                                  | Production sites are behind Cloudflare / load balancers; the real client IP is in `X-Forwarded-For` or `CF-Connecting-IP`. `IpAllowlist::get_source_ip()` walks the chain.                                                            |
+| Expose a public simulator bypass header                                                                          | The simulator is local-dev only. It now enters through admin AJAX and passes `trusted_simulation: true` directly to `WebhookHandler::process()`, so public webhook requests always require timestamp, signature, and IP verification. |
+| Lift the existing `WebhookHandler::SANDBOX_IPS` / `PRODUCTION_IPS` constants and keep the old constant locations | They're already moved into `IpAllowlist`. The handler tests that previously checked `WebhookHandler::SANDBOX_IPS` now live in `IpAllowlistTest`. Re-exporting old constants would defeat the split.                                   |
+| Add a config field for "tolerance window seconds"                                                                | The 300s window is documented by Maya and matches the legacy plugin. Adding configurability invites pin-and-drift bugs. Hardcoded constant; trivial to find if Maya ever changes it.                                                  |
 
 ---
 
@@ -349,7 +347,7 @@ and assumed `false === $signature_bytes` was enough downstream. On PHP
 test-framework level: it still propagates, fails strict-mode assertions,
 and surfaces as a `WARN` line in the runner.
 
-The fix was defensive parsing — reject the bad input *before* calling
+The fix was defensive parsing — reject the bad input _before_ calling
 `hex2bin`:
 
 ```php
@@ -389,62 +387,57 @@ self-documenting about which shapes are rejected. The takeaway:
        ↓
 5. Webhook/Simulator::simulate()
    ├── Simulator::build_payload($order, $status)   # Maya-shaped record
-   └── wp_remote_post(
-         $settings->webhook_url(),                  # = local-dev override OR home_url
-         headers: [
-           Content-Type:        application/json,
-           X-Simulated-Webhook: true,
-         ],
+   └── WebhookHandler::process(
          body: json_encode($payload),
+         headers: [],
+         source_ip: '127.0.0.1',
+         is_sandbox: true,
+         logger: Logger(true),
+         trusted_simulation: true,
        )
-       │
-       ↓ (loops back to the same WP instance)
-6. Webhook/WebhookHandler::handle_wc_api()  (or handle_rest if the URL is REST)
-   └── WebhookHandler::process(body, headers, source_ip, is_sandbox=true, logger)
        ├── json_decode ✓
-       ├── is_simulated() → true (sandbox + bypass header)
+       ├── trusted_simulation → true
        │   ├── SKIP timestamp check
        │   ├── SKIP signature check
        │   └── SKIP IP check
        ├── WebhookEvent::try_from_string('PAYMENT_SUCCESS')
-       └── logger->info('Webhook verified (simulated) — would dispatch
-                        PAYMENT_SUCCESS for order 42.')
+       └── EventDispatcher::dispatch(...)
    └── returns [status: 200, body: {received: true, simulated: true,
-                                     event: 'PAYMENT_SUCCESS', reference: '42'}]
+                                     event: 'PAYMENT_SUCCESS', reference: '42',
+                                     dispatch: {...}}]
        │
        ↓
-7. Simulator unpacks [status, body] and hands it back to the AJAX handler
+6. Simulator hands [status, body] back to the AJAX handler
    ↓
-8. SimulateWebhook::handle() → wp_send_json_success({status, body})
+7. SimulateWebhook::handle() → wp_send_json_success({status, body})
    ↓
-9. JS renders: "HTTP 200 · handler accepted (would dispatch event)"
-   + JSON-pretty-printed body in a <pre> block
+8. JS renders the handler result and JSON-pretty-printed body
    ↓
-10. Admin opens WooCommerce → Status → Logs → wc-maya-gateway
-    → sees the "would dispatch" line
+9. Admin opens WooCommerce → Status → Logs → wc-maya-gateway
+   → sees the "Webhook verified (simulated)" line
 ```
 
-Every box past step 5 is real plugin code that a Maya callback would also
-hit. The simulator earns its keep by exercising the *full* handler
-pipeline (parser + event extraction + logging) without needing a tunnel.
+Every box past step 5 is real dispatcher code that a Maya callback would
+also hit after verification. The simulator exercises parser + event
+dispatch without needing a tunnel.
 
 ---
 
 ## 10. Test coverage delta
 
-| File | Cases | Covers |
-| --- | --- | --- |
-| `Webhook/PayloadFlattenerTest.php` | 5 | Dotted keys, booleans, empty-skip rule, sort order, realistic golden fixture |
-| `Webhook/TimestampVerifierTest.php` | 5 | Inside window, too-old, too-future, non-numeric, default-clock |
-| `Webhook/SignatureVerifierTest.php` | 7 | Header parse (order, missing, empty), real RSA round-trip, tampered payload, malformed hex, multi-key walk |
-| `Webhook/IpAllowlistTest.php` | 6 | Constants, environment switch, CF-over-XFF priority, XFF first-entry fallback, X-Client / Client / REMOTE_ADDR fallback chain, whitespace trimming |
-| `Webhook/PublicKeyBundleTest.php` | 3 | Per-env count, environment switch, every PEM parses with OpenSSL |
-| `Webhook/WebhookHandlerTest.php` (rewritten) | 8 | Non-JSON, stale timestamp, bad signature, bad IP, success path, simulator bypass (sandbox), simulator refused in production, route constants |
-| `Webhook/SimulatorTest.php` | 6 | Payload shape (success), payload shape (failure), invalid status rejection, sandbox-mode gate, real wp_remote_post wiring, WP_Error passthrough |
+| File                                 | Cases | Covers                                                                                                                                                    |
+| ------------------------------------ | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Webhook/PayloadFlattenerTest.php`   | 5     | Dotted keys, booleans, empty-skip rule, sort order, realistic golden fixture                                                                              |
+| `Webhook/TimestampVerifierTest.php`  | 5     | Inside window, too-old, too-future, non-numeric, default-clock                                                                                            |
+| `Webhook/SignatureVerifierTest.php`  | 7     | Header parse (order, missing, empty), real RSA round-trip, tampered payload, malformed hex, multi-key walk                                                |
+| `Webhook/IpAllowlistTest.php`        | 6     | Constants, environment switch, CF-over-XFF priority, XFF first-entry fallback, X-Client / Client / REMOTE_ADDR fallback chain, whitespace trimming        |
+| `Webhook/PublicKeyBundleTest.php`    | 3     | Per-env count, environment switch, every PEM parses with OpenSSL                                                                                          |
+| `WebhookHandlerTest.php` (rewritten) | 8     | Non-JSON, stale timestamp, bad signature, bad IP, success path, former simulator header rejected, former header still requires signature, route constants |
+| `Webhook/SimulatorTest.php`          | 5     | Payload shape (success), payload shape (failure), invalid status rejection, sandbox-mode gate, trusted in-process dispatch                                |
 
-**40 cases across the 7 new/rewritten suites** — every primitive owns its
-own contract. Net delta vs. Phase 1's 44-test baseline: **+38** (the 2 cases
-from Phase 1's `WebhookHandlerTest` were replaced, hence 40 − 2 = 38).
+**39 cases across the 7 new/rewritten suites** — every primitive owns its
+own contract. Net delta vs. Phase 1's 44-test baseline: **+37** (the 2 cases
+from Phase 1's `WebhookHandlerTest` were replaced, hence 39 − 2 = 37).
 
 ---
 
@@ -475,7 +468,7 @@ Every line should be `No syntax errors detected in …`.
 4. Type a real (sandbox) order ID, pick `PAYMENT_SUCCESS`, click
    **Simulate webhook**.
 5. Result panel should show `HTTP 200 · handler accepted (would dispatch
-   event)` plus the JSON body containing the parsed event.
+event)` plus the JSON body containing the parsed event.
 6. WooCommerce → Status → Logs → `wc-maya-gateway-YYYY-MM-DD-*.log`
    should contain a line like
    `Webhook verified (simulated) — would dispatch PAYMENT_SUCCESS for order 42.`
@@ -492,7 +485,7 @@ Maya's documented sandbox IPs (`13.229.160.234` or `3.1.199.75`).
 ## 12. Where to read next
 
 - [../REBUILD_PLAN.md](../REBUILD_PLAN.md) — the master plan; Phase 3 is
-  next (webhook *registration* — manage the merchant's webhooks from our
+  next (webhook _registration_ — manage the merchant's webhooks from our
   side instead of pointing them at Maya Manager).
 - [../architecture.md](../architecture.md) — updated map and the
   "which file do I open?" table.

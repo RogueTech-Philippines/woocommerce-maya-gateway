@@ -14,7 +14,6 @@ use Brain\Monkey\Functions;
 use Mockery;
 use TaniKyuun\MayaGateway\Settings\SettingsHelper;
 use TaniKyuun\MayaGateway\Webhook\Simulator;
-use TaniKyuun\MayaGateway\Webhook\WebhookHandler;
 use WC_Order;
 use WC_Payment_Gateway;
 use WP_Error;
@@ -38,8 +37,7 @@ function wc_maya_fake_helper(bool $is_sandbox = true): SettingsHelper
         'local_dev_webhook_url' => 'https://tunnel.example.test',
     ]);
 
-    // SettingsHelper's webhook_url() falls back to home_url() when blank, but we
-    // override here so wp_remote_post is called with a known URL.
+    // Keep a non-empty URL to prove simulate() no longer depends on transport.
     return new SettingsHelper($gateway);
 }
 
@@ -47,6 +45,7 @@ beforeEach(function (): void {
     Functions\when('wp_json_encode')->alias(static fn(mixed $value): string => (string) json_encode($value));
     Functions\when('home_url')->alias(static fn(string $path = ''): string => 'https://example.test' . $path);
     Functions\when('__')->alias(static fn(string $text, string $domain = ''): string => $text);
+    Functions\when('get_option')->alias(static fn(string $name, mixed $default = null): mixed => $default);
 });
 
 test('build_payload returns a Maya-shaped record with simulated marker', function (): void {
@@ -95,42 +94,21 @@ test('simulate refuses to run when the gateway is not in sandbox mode', function
     expect($result->get_error_code())->toBe('wc_maya_simulator_not_sandbox');
 });
 
-test('simulate posts to the configured webhook URL with the bypass header', function (): void {
-    $captured = [];
-    Functions\when('wp_remote_post')->alias(static function (string $url, array $args) use (&$captured): array {
-        $captured = [ 'url' => $url, 'args' => $args ];
-        return [ 'response' => [ 'code' => 200 ], 'body' => '{"received":true}' ];
-    });
-    Functions\when('wp_remote_retrieve_response_code')->alias(
-        static fn(array $response): int => (int) $response['response']['code'],
-    );
-    Functions\when('wp_remote_retrieve_body')->alias(
-        static fn(array $response): string => (string) $response['body'],
-    );
+test('simulate dispatches internally as trusted simulation', function (): void {
+    $order = wc_maya_fake_order(42);
+    $order->shouldReceive('is_paid')->andReturn(false);
+    $order->shouldReceive('update_status')->with('failed', Mockery::type('string'))->once();
+
+    Functions\when('wc_get_order')->alias(static fn(int $id): ?WC_Order => 42 === $id ? $order : null);
 
     $simulator = new Simulator(wc_maya_fake_helper());
-    $result    = $simulator->simulate(wc_maya_fake_order(42), 'PAYMENT_SUCCESS');
+    $result    = $simulator->simulate($order, 'PAYMENT_FAILED');
 
     expect($result)->not->toBeInstanceOf(WP_Error::class);
     expect($result['status'])->toBe(200);
-    expect($result['body'])->toMatchArray([ 'received' => true ]);
-
-    expect($captured['url'])->toBe('https://tunnel.example.test/?wc-api=maya_webhook');
-    expect($captured['args']['headers'])->toMatchArray([
-        WebhookHandler::HEADER_SIMULATED => 'true',
-        'Content-Type'                   => 'application/json',
+    expect($result['body'])->toMatchArray([
+        'received'  => true,
+        'simulated' => true,
+        'event'     => 'PAYMENT_FAILED',
     ]);
-    $body = json_decode($captured['args']['body'], true);
-    expect($body['status'])->toBe('PAYMENT_SUCCESS');
-    expect($body['requestReferenceNumber'])->toBe('42');
-});
-
-test('simulate surfaces WP_Error from the transport untouched', function (): void {
-    $error = new WP_Error('http_request_failed', 'curl: no route to host');
-    Functions\when('wp_remote_post')->alias(static fn(): WP_Error => $error);
-
-    $simulator = new Simulator(wc_maya_fake_helper());
-    $result    = $simulator->simulate(wc_maya_fake_order(), 'PAYMENT_SUCCESS');
-
-    expect($result)->toBe($error);
 });

@@ -173,6 +173,18 @@ class MayaGateway extends WC_Payment_Gateway
         return $processor->process($order, (float) $amount, (string) $reason);
     }
 
+    private static function load_admin_screen_functions(): void
+    {
+        if (function_exists('get_current_screen') || ! defined('ABSPATH')) {
+            return;
+        }
+
+        $screen_file = ABSPATH . 'wp-admin/includes/screen.php';
+        if (is_readable($screen_file)) {
+            require_once $screen_file;
+        }
+    }
+
     /**
      * Save settings + reconcile webhook registrations with Maya.
      *
@@ -184,6 +196,8 @@ class MayaGateway extends WC_Payment_Gateway
      */
     public function process_admin_options(): bool
     {
+        self::load_admin_screen_functions();
+
         $saved = parent::process_admin_options();
         if (! $saved) {
             return $saved;

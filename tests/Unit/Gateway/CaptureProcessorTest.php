@@ -164,11 +164,11 @@ test('bubbles capture errors from the transport', function (): void {
     expect($result->get_error_code())->toBe('wc_maya_http_400');
 });
 
-test('find_capturable_payment picks the first AUTHORIZED + canCapture entry', function (): void {
+test('find_capturable_payment picks the first authorization marker with canCapture', function (): void {
     $payments = [
         wc_maya_payment_record('CAPTURED', 100.0, 100.0, can_capture: false, id: 'pay_old'),
-        wc_maya_payment_record('AUTHORIZED', 100.0, 0.0, can_capture: false, id: 'pay_locked'),
-        wc_maya_payment_record('AUTHORIZED', 100.0, 0.0, can_capture: true, id: 'pay_winner'),
+        wc_maya_payment_record('CAPTURED', 100.0, 40.0, can_capture: false, id: 'pay_locked'),
+        wc_maya_payment_record('CAPTURED', 100.0, 40.0, can_capture: true, id: 'pay_winner'),
         wc_maya_payment_record('AUTHORIZED', 100.0, 0.0, can_capture: true, id: 'pay_extra'),
     ];
 

@@ -153,7 +153,7 @@ test('returns 200 with parsed event and dispatch result when all checks pass', f
     expect($result['body']['dispatch'])->toBe([ 'action' => 'payment_complete', 'order_id' => 42 ]);
 });
 
-test('honors the X-Simulated-Webhook bypass in sandbox without checking timestamp, signature, or IP', function (): void {
+test('rejects the former simulator header on the public handler', function (): void {
     $body = (string) json_encode([
         'status'                 => 'PAYMENT_FAILED',
         'requestReferenceNumber' => '99',
@@ -161,18 +161,16 @@ test('honors the X-Simulated-Webhook bypass in sandbox without checking timestam
 
     $result = WebhookHandler::process(
         $body,
-        [ WebhookHandler::HEADER_SIMULATED => 'true' ], // no timestamp, no signature
-        '127.0.0.1',                                    // not in allowlist
-        true,                                           // sandbox
+        [ 'x-simulated-webhook' => 'true' ],
+        '127.0.0.1',
+        true,
         new Logger(false),
-        wc_maya_verifier_rejecting(),                   // would reject if asked
+        wc_maya_verifier_rejecting(),
         wc_maya_dispatcher_recording(),
     );
 
-    expect($result['status'])->toBe(200);
-    expect($result['body']['simulated'])->toBeTrue();
-    expect($result['body']['event'])->toBe('PAYMENT_FAILED');
-    expect($result['body']['dispatch'])->toBe([ 'action' => 'noop_for_test' ]);
+    expect($result['status'])->toBe(401);
+    expect($result['body']['error']['code'])->toBe('stale_timestamp');
 });
 
 test('does not call the dispatcher when the event is unknown to the enum', function (): void {
@@ -202,23 +200,23 @@ test('does not call the dispatcher when the event is unknown to the enum', funct
     expect($result['body']['dispatch'])->toBeNull();
 });
 
-test('refuses the simulator bypass in production mode', function (): void {
+test('former simulator header still requires a valid signature', function (): void {
     $body = (string) json_encode([ 'status' => 'PAYMENT_SUCCESS', 'requestReferenceNumber' => '1' ]);
 
     $result = WebhookHandler::process(
         $body,
         [
-            WebhookHandler::HEADER_SIMULATED => 'true',
+            'x-simulated-webhook'             => 'true',
             WebhookHandler::HEADER_TIMESTAMP => wc_maya_fresh_timestamp(),
             WebhookHandler::HEADER_SIGNATURE => 'nonce=n,v1=ab',
         ],
         '13.229.160.234',
-        false,                          // production
+        false,
         new Logger(false),
         wc_maya_verifier_rejecting(),
     );
 
-    expect($result['status'])->toBe(401); // falls through to signature check, which rejects
+    expect($result['status'])->toBe(401);
     expect($result['body']['error']['code'])->toBe('invalid_signature');
 });
 
