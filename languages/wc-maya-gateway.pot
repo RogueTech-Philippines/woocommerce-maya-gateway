@@ -3,8 +3,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: WooCommerce Maya Gateway 1.0.0\n"
-"Report-Msgid-Bugs-To: https://github.com/TaniKyuun/woocommerce-maya-gateway/issues\n"
-"POT-Creation-Date: 2026-06-26 22:38+0000\n"
+"Report-Msgid-Bugs-To: https://github.com/RogueTech-Philippines/woocommerce-maya-gateway/issues\n"
+"POT-Creation-Date: 2026-07-02 15:37+0800\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -12,7 +12,7 @@ msgstr ""
 "X-Generator: bin/make-pot.php (wc-maya-gateway)\n"
 "X-Domain: wc-maya-gateway\n"
 
-#: src/Gateway/MayaGateway.php:252
+#: src/Gateway/MayaGateway.php:260
 msgid "%d webhook registered with Maya."
 msgid_plural "%d webhooks registered with Maya."
 msgstr[0] ""
@@ -26,7 +26,7 @@ msgstr ""
 msgid "API credentials"
 msgstr ""
 
-#: src/Gateway/MayaGateway.php:48
+#: src/Gateway/MayaGateway.php:56
 msgid "Accept payments via Maya (cards, e-wallets, QR Ph)."
 msgstr ""
 
@@ -99,11 +99,11 @@ msgstr ""
 msgid "Copy"
 msgstr ""
 
-#: src/Gateway/MayaGateway.php:161
+#: src/Gateway/MayaGateway.php:169
 msgid "Could not load order #%d for refund."
 msgstr ""
 
-#: src/Gateway/MayaGateway.php:124
+#: src/Gateway/MayaGateway.php:132
 #: src/Admin/Ajax/CapturePayment.php:60
 msgid "Could not load order #%d."
 msgstr ""
@@ -168,9 +168,9 @@ msgstr ""
 msgid "Hide"
 msgstr ""
 
-#: src/Admin/Ajax/TestConnection.php:51
-#: src/Admin/Ajax/CapturePayment.php:42
 #: src/Admin/Ajax/RefreshWebhooks.php:39
+#: src/Admin/Ajax/CapturePayment.php:42
+#: src/Admin/Ajax/TestConnection.php:51
 #: src/Admin/Ajax/SimulateWebhook.php:40
 msgid "Insufficient permissions."
 msgstr ""
@@ -216,7 +216,7 @@ msgstr ""
 msgid "Maya API returned HTTP %d."
 msgstr ""
 
-#: src/Gateway/MayaGateway.php:47
+#: src/Gateway/MayaGateway.php:55
 msgid "Maya Checkout"
 msgstr ""
 
@@ -224,15 +224,15 @@ msgstr ""
 msgid "Maya Checkout secret key (pair of the public key above). Used to manage webhooks at /checkout/v1/webhooks. Note: the Payment Vault product has separate keys at /payments/v1/* and is not used here. Never expose this on the frontend."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:152
+#: src/Webhook/EventDispatcher.php:183
 msgid "Maya PAYMENT_SUCCESS webhook arrived with a mismatched amount/currency (expected %1$s %3$s, received %2$s %4$s). Order state left unchanged for manual review."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:336
+#: src/Webhook/EventDispatcher.php:367
 msgid "Maya authorization failed."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:314
+#: src/Webhook/EventDispatcher.php:345
 msgid "Maya authorized the payment. Use the Capture panel on this order to capture funds."
 msgstr ""
 
@@ -261,9 +261,9 @@ msgstr ""
 msgid "Maya events"
 msgstr ""
 
-#: src/Admin/Ajax/TestConnection.php:66
-#: src/Admin/Ajax/CapturePayment.php:70
 #: src/Admin/Ajax/RefreshWebhooks.php:46
+#: src/Admin/Ajax/CapturePayment.php:70
+#: src/Admin/Ajax/TestConnection.php:66
 #: src/Admin/Ajax/SimulateWebhook.php:74
 msgid "Maya gateway not registered."
 msgstr ""
@@ -272,15 +272,15 @@ msgstr ""
 msgid "Maya no longer permits voiding this authorization (it likely expired or was captured)."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:267
+#: src/Webhook/EventDispatcher.php:298
 msgid "Maya partial capture confirmed: %1$s of %2$s captured. Order will complete when the remaining balance is captured."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:335
+#: src/Webhook/EventDispatcher.php:366
 msgid "Maya payment expired."
 msgstr ""
 
-#: src/Webhook/EventDispatcher.php:337
+#: src/Webhook/EventDispatcher.php:368
 msgid "Maya payment failed."
 msgstr ""
 
@@ -453,7 +453,7 @@ msgstr ""
 msgid "Save the form first if you just changed it — this URL is rendered from saved settings."
 msgstr ""
 
-#: src/Gateway/MayaGateway.php:216
+#: src/Gateway/MayaGateway.php:224
 msgid "Saved. Add both Maya API keys to register webhooks automatically."
 msgstr ""
 
@@ -551,11 +551,11 @@ msgstr ""
 msgid "Webhook URL to register"
 msgstr ""
 
-#: src/Gateway/MayaGateway.php:231
+#: src/Gateway/MayaGateway.php:239
 msgid "Webhook registration failed: %s"
 msgstr ""
 
-#: src/Gateway/MayaGateway.php:242
+#: src/Gateway/MayaGateway.php:250
 msgid "Webhook registration partially succeeded — %1$d created; errors: %2$s"
 msgstr ""
 
