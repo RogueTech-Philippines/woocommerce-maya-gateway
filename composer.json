@@ -1,5 +1,5 @@
 {
-  "name": "tanikyuun/woocommerce-maya-gateway",
+  "name": "roguetech-philippines/woocommerce-maya-gateway",
   "description": "Maya payment gateway for WooCommerce — modern rewrite",
   "type": "wordpress-plugin",
   "license": "GPL-3.0",
@@ -17,12 +17,12 @@
   },
   "autoload": {
     "psr-4": {
-      "TaniKyuun\\MayaGateway\\": "src/"
+      "RogueTechPhilippines\\MayaGateway\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "TaniKyuun\\MayaGateway\\Tests\\": "tests/"
+      "RogueTechPhilippines\\MayaGateway\\Tests\\": "tests/"
     }
   },
   "scripts": {

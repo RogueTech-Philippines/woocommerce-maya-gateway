@@ -8,19 +8,19 @@
  * in `tests/stubs.php`; the real class lives in WC core, but its public
  * shape (`get_setting`, `$settings`, etc.) is faithfully reproduced there.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Blocks
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Blocks
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Blocks;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Blocks;
 
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
 use Brain\Monkey\Actions;
 use Brain\Monkey\Filters;
 use Brain\Monkey\Functions;
-use TaniKyuun\MayaGateway\Blocks\MayaBlocksPaymentMethod;
-use TaniKyuun\MayaGateway\Gateway\MayaGateway;
+use RogueTechPhilippines\MayaGateway\Blocks\MayaBlocksPaymentMethod;
+use RogueTechPhilippines\MayaGateway\Gateway\MayaGateway;
 
 beforeEach(function (): void {
     Functions\when('__')->alias(static fn(string $text, string $domain = ''): string => $text);

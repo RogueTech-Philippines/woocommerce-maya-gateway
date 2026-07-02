@@ -3,12 +3,12 @@
 /**
  * Gateway settings form definitions.
  *
- * @package TaniKyuun\MayaGateway\Admin
+ * @package RogueTechPhilippines\MayaGateway\Admin
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Admin;
+namespace RogueTechPhilippines\MayaGateway\Admin;
 
 /**
  * Single source of truth for the WC_Settings_API form on the Maya gateway

@@ -3,14 +3,14 @@
 /**
  * Unit tests for the AuthorizationType enum.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Value
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Value
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Value;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Value;
 
-use TaniKyuun\MayaGateway\Value\AuthorizationType;
+use RogueTechPhilippines\MayaGateway\Value\AuthorizationType;
 
 test('for_maya_api uppercases the stored value', function (): void {
     expect(AuthorizationType::Normal->for_maya_api())->toBe('NORMAL')

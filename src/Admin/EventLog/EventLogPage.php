@@ -3,14 +3,14 @@
 /**
  * Admin "Maya events" tab under WooCommerce → Status.
  *
- * @package TaniKyuun\MayaGateway\Admin\EventLog
+ * @package RogueTechPhilippines\MayaGateway\Admin\EventLog
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Admin\EventLog;
+namespace RogueTechPhilippines\MayaGateway\Admin\EventLog;
 
-use TaniKyuun\MayaGateway\Util\Logger;
+use RogueTechPhilippines\MayaGateway\Util\Logger;
 
 /**
  * Reads the wc-maya-gateway log channel and renders a parsed view of the

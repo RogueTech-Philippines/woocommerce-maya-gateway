@@ -7,14 +7,14 @@
  * Phase 4 lands; this file covers the testable surface: the createCheckout
  * payload builder.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Admin\Ajax
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Admin\Ajax
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Admin\Ajax;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Admin\Ajax;
 
-use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
+use RogueTechPhilippines\MayaGateway\Admin\Ajax\TestConnection;
 
 test('build_test_checkout_payload renders totalAmount as a Money array', function (): void {
     $payload = TestConnection::build_test_checkout_payload('ref-abc', 'https://example.test/');

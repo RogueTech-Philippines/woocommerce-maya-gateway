@@ -111,7 +111,7 @@ woocommerce-maya-gateway/
 │   ├── css/maya-admin.css            ← styles for the settings page
 │   └── js/maya-admin.js              ← JS for show/hide keys, Test connection
 ├── docs/                             ← you are here
-├── src/                              ← all PHP under namespace TaniKyuun\MayaGateway
+├── src/                              ← all PHP under namespace RogueTechPhilippines\MayaGateway
 └── tests/                            ← Pest unit tests; mirrors src/ layout
 ```
 
@@ -171,7 +171,7 @@ define('WC_MAYA_PLUGIN_FILE', __FILE__);
 
 require_once __DIR__ . '/vendor/autoload.php';   // Composer autoloader
 
-use TaniKyuun\MayaGateway\Plugin;
+use RogueTechPhilippines\MayaGateway\Plugin;
 
 add_action('before_woocommerce_init', /* HPOS declaration */ );
 add_action('plugins_loaded', [Plugin::class, 'init']);
@@ -184,7 +184,7 @@ What happens at runtime:
 2. If the merchant has activated us, WP requires this file on every
    page load.
 3. `vendor/autoload.php` registers Composer's class autoloader. Now
-   any reference to `TaniKyuun\MayaGateway\X` will find `src/X.php`
+   any reference to `RogueTechPhilippines\MayaGateway\X` will find `src/X.php`
    automatically — that's PSR-4 at work.
 4. We declare HPOS compatibility (a current WC requirement).
 5. We hook into `plugins_loaded` — a moment WordPress fires once all

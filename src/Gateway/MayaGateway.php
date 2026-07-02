@@ -3,22 +3,22 @@
 /**
  * Maya WC_Payment_Gateway implementation.
  *
- * @package TaniKyuun\MayaGateway\Gateway
+ * @package RogueTechPhilippines\MayaGateway\Gateway
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Gateway;
+namespace RogueTechPhilippines\MayaGateway\Gateway;
 
-use TaniKyuun\MayaGateway\Admin\FieldRenderers;
-use TaniKyuun\MayaGateway\Admin\FormFields;
-use TaniKyuun\MayaGateway\Api\Endpoints\Checkouts;
-use TaniKyuun\MayaGateway\Api\Endpoints\Payments;
-use TaniKyuun\MayaGateway\Api\Endpoints\Webhooks;
-use TaniKyuun\MayaGateway\Api\MayaApiClient;
-use TaniKyuun\MayaGateway\Settings\SettingsHelper;
-use TaniKyuun\MayaGateway\Util\Logger;
-use TaniKyuun\MayaGateway\Webhook\Registrar;
+use RogueTechPhilippines\MayaGateway\Admin\FieldRenderers;
+use RogueTechPhilippines\MayaGateway\Admin\FormFields;
+use RogueTechPhilippines\MayaGateway\Api\Endpoints\Checkouts;
+use RogueTechPhilippines\MayaGateway\Api\Endpoints\Payments;
+use RogueTechPhilippines\MayaGateway\Api\Endpoints\Webhooks;
+use RogueTechPhilippines\MayaGateway\Api\MayaApiClient;
+use RogueTechPhilippines\MayaGateway\Settings\SettingsHelper;
+use RogueTechPhilippines\MayaGateway\Util\Logger;
+use RogueTechPhilippines\MayaGateway\Webhook\Registrar;
 use WC_Admin_Settings;
 use WC_Order;
 use WC_Payment_Gateway;

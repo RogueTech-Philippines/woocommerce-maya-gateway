@@ -3,17 +3,17 @@
 /**
  * Unit tests for the local-dev webhook Simulator.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Webhook
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Webhook;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook;
 
 use Brain\Monkey\Functions;
 use Mockery;
-use TaniKyuun\MayaGateway\Settings\SettingsHelper;
-use TaniKyuun\MayaGateway\Webhook\Simulator;
+use RogueTechPhilippines\MayaGateway\Settings\SettingsHelper;
+use RogueTechPhilippines\MayaGateway\Webhook\Simulator;
 use WC_Order;
 use WC_Payment_Gateway;
 use WP_Error;

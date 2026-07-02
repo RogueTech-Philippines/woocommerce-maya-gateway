@@ -3,18 +3,18 @@
 /**
  * Per-request memo for "is this order's Maya payment capturable?".
  *
- * @package TaniKyuun\MayaGateway\Admin\OrderActions
+ * @package RogueTechPhilippines\MayaGateway\Admin\OrderActions
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Admin\OrderActions;
+namespace RogueTechPhilippines\MayaGateway\Admin\OrderActions;
 
-use TaniKyuun\MayaGateway\Api\Endpoints\Payments;
-use TaniKyuun\MayaGateway\Gateway\CaptureProcessor;
-use TaniKyuun\MayaGateway\Gateway\MayaGateway;
-use TaniKyuun\MayaGateway\Util\IdempotencyKey;
-use TaniKyuun\MayaGateway\Value\PaymentRecord;
+use RogueTechPhilippines\MayaGateway\Api\Endpoints\Payments;
+use RogueTechPhilippines\MayaGateway\Gateway\CaptureProcessor;
+use RogueTechPhilippines\MayaGateway\Gateway\MayaGateway;
+use RogueTechPhilippines\MayaGateway\Util\IdempotencyKey;
+use RogueTechPhilippines\MayaGateway\Value\PaymentRecord;
 
 /**
  * Shared between {@see CaptureButton} and {@see CapturePanel} so the

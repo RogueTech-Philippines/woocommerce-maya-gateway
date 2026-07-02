@@ -3,12 +3,12 @@
 /**
  * Logger utility.
  *
- * @package TaniKyuun\MayaGateway\Util
+ * @package RogueTechPhilippines\MayaGateway\Util
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Util;
+namespace RogueTechPhilippines\MayaGateway\Util;
 
 /**
  * Thin wrapper around WC_Logger.

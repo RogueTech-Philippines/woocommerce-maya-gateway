@@ -3,15 +3,15 @@
 /**
  * Maya Checkout endpoint wrapper.
  *
- * @package TaniKyuun\MayaGateway\Api\Endpoints
+ * @package RogueTechPhilippines\MayaGateway\Api\Endpoints
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Api\Endpoints;
+namespace RogueTechPhilippines\MayaGateway\Api\Endpoints;
 
-use TaniKyuun\MayaGateway\Api\MayaApiClient;
-use TaniKyuun\MayaGateway\Value\CheckoutSession;
+use RogueTechPhilippines\MayaGateway\Api\MayaApiClient;
+use RogueTechPhilippines\MayaGateway\Value\CheckoutSession;
 use WP_Error;
 
 /**

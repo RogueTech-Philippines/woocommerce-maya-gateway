@@ -3,14 +3,14 @@
 /**
  * Unit tests for WebhookRecord.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Value
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Value
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Value;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Value;
 
-use TaniKyuun\MayaGateway\Value\WebhookRecord;
+use RogueTechPhilippines\MayaGateway\Value\WebhookRecord;
 
 test('from_array maps every Maya field onto its property', function (): void {
     $record = WebhookRecord::from_array([

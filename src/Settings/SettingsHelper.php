@@ -3,14 +3,14 @@
 /**
  * Settings accessor.
  *
- * @package TaniKyuun\MayaGateway\Settings
+ * @package RogueTechPhilippines\MayaGateway\Settings
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Settings;
+namespace RogueTechPhilippines\MayaGateway\Settings;
 
-use TaniKyuun\MayaGateway\Value\AuthorizationType;
+use RogueTechPhilippines\MayaGateway\Value\AuthorizationType;
 use WC_Payment_Gateway;
 
 /**

@@ -3,14 +3,14 @@
 /**
  * Action Scheduler-backed retry queue for transient webhook failures.
  *
- * @package TaniKyuun\MayaGateway\Webhook
+ * @package RogueTechPhilippines\MayaGateway\Webhook
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Webhook;
+namespace RogueTechPhilippines\MayaGateway\Webhook;
 
-use TaniKyuun\MayaGateway\Util\Logger;
+use RogueTechPhilippines\MayaGateway\Util\Logger;
 
 /**
  * Re-enqueues a verified-but-undeliverable webhook payload for a later
@@ -134,7 +134,7 @@ final class RetryQueue
         // now that whatever transient blocker (DB lag, lookup failure) has
         // had time to resolve.
         $event_name = self::extract_event_name($payload);
-        $event      = \TaniKyuun\MayaGateway\Value\WebhookEvent::try_from_string($event_name);
+        $event      = \RogueTechPhilippines\MayaGateway\Value\WebhookEvent::try_from_string($event_name);
 
         if (null === $event) {
             $logger->warning('RetryQueue: replay payload has no recognizable event; dropping.', [
@@ -201,7 +201,7 @@ final class RetryQueue
      */
     private static function load_runtime_settings(): array
     {
-        $option = get_option('woocommerce_' . \TaniKyuun\MayaGateway\Gateway\MayaGateway::ID . '_settings', []);
+        $option = get_option('woocommerce_' . \RogueTechPhilippines\MayaGateway\Gateway\MayaGateway::ID . '_settings', []);
         if (! is_array($option)) {
             $option = [];
         }
@@ -212,15 +212,15 @@ final class RetryQueue
         ];
     }
 
-    private static function build_payments_endpoint(bool $is_sandbox, Logger $logger): \TaniKyuun\MayaGateway\Api\Endpoints\Payments
+    private static function build_payments_endpoint(bool $is_sandbox, Logger $logger): \RogueTechPhilippines\MayaGateway\Api\Endpoints\Payments
     {
-        $option = get_option('woocommerce_' . \TaniKyuun\MayaGateway\Gateway\MayaGateway::ID . '_settings', []);
+        $option = get_option('woocommerce_' . \RogueTechPhilippines\MayaGateway\Gateway\MayaGateway::ID . '_settings', []);
         if (! is_array($option)) {
             $option = [];
         }
 
-        return new \TaniKyuun\MayaGateway\Api\Endpoints\Payments(
-            new \TaniKyuun\MayaGateway\Api\MayaApiClient(
+        return new \RogueTechPhilippines\MayaGateway\Api\Endpoints\Payments(
+            new \RogueTechPhilippines\MayaGateway\Api\MayaApiClient(
                 (string) ($option['public_key'] ?? ''),
                 (string) ($option['secret_key'] ?? ''),
                 $is_sandbox,

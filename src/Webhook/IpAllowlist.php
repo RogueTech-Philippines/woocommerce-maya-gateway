@@ -3,12 +3,12 @@
 /**
  * Maya outbound IP allowlist.
  *
- * @package TaniKyuun\MayaGateway\Webhook
+ * @package RogueTechPhilippines\MayaGateway\Webhook
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Webhook;
+namespace RogueTechPhilippines\MayaGateway\Webhook;
 
 /**
  * Single source of truth for the four IPs Maya posts webhooks from.

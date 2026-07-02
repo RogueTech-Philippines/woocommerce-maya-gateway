@@ -58,7 +58,7 @@ void / refund, block-based and classic checkout, HPOS, translatable.
 ### From source (developers)
 
 ```bash
-git clone https://github.com/TaniKyuun/woocommerce-maya-gateway.git \
+git clone https://github.com/RogueTech-Philippines/woocommerce-maya-gateway.git \
     wp-content/plugins/woocommerce-maya-gateway
 cd wp-content/plugins/woocommerce-maya-gateway
 composer install

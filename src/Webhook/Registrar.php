@@ -3,17 +3,17 @@
 /**
  * Reconciles Maya's registered webhooks with the set this plugin manages.
  *
- * @package TaniKyuun\MayaGateway\Webhook
+ * @package RogueTechPhilippines\MayaGateway\Webhook
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Webhook;
+namespace RogueTechPhilippines\MayaGateway\Webhook;
 
-use TaniKyuun\MayaGateway\Api\Endpoints\Webhooks;
-use TaniKyuun\MayaGateway\Util\Logger;
-use TaniKyuun\MayaGateway\Value\WebhookEvent;
-use TaniKyuun\MayaGateway\Value\WebhookRecord;
+use RogueTechPhilippines\MayaGateway\Api\Endpoints\Webhooks;
+use RogueTechPhilippines\MayaGateway\Util\Logger;
+use RogueTechPhilippines\MayaGateway\Value\WebhookEvent;
+use RogueTechPhilippines\MayaGateway\Value\WebhookRecord;
 use WP_Error;
 
 /**

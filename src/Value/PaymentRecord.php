@@ -3,12 +3,12 @@
 /**
  * Payment record value object.
  *
- * @package TaniKyuun\MayaGateway\Value
+ * @package RogueTechPhilippines\MayaGateway\Value
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Value;
+namespace RogueTechPhilippines\MayaGateway\Value;
 
 /**
  * Parsed item from GET /payments/v1/payment-rrns/{rrn}.

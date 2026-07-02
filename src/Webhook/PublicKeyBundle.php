@@ -3,12 +3,12 @@
 /**
  * Maya webhook-signing public keys.
  *
- * @package TaniKyuun\MayaGateway\Webhook
+ * @package RogueTechPhilippines\MayaGateway\Webhook
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Webhook;
+namespace RogueTechPhilippines\MayaGateway\Webhook;
 
 /**
  * RSA public keys Maya uses to sign outbound webhooks.

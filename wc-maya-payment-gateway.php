@@ -2,10 +2,11 @@
 
 /**
  * Plugin Name:       WooCommerce Maya Gateway
- * Plugin URI:        https://github.com/TaniKyuun/woocommerce-maya-gateway
+ * Plugin URI:        https://github.com/RogueTech-Philippines/woocommerce-maya-gateway
  * Description:       Maya payment gateway for WooCommerce (Philippines).
  * Version:           1.0.0
- * Author:            TaniKyuun
+ * Author:            RogueTech Philippines
+ * Author URI:        https://github.com/RogueTech-Philippines
  * License:           GPL-3.0
  * Text Domain:       wc-maya-gateway
  * Domain Path:       /languages
@@ -14,7 +15,7 @@
  * WC requires at least: 10.6
  * WC tested up to:   10.7
  *
- * @package TaniKyuun\MayaGateway
+ * @package RogueTechPhilippines\MayaGateway
  */
 
 declare(strict_types=1);
@@ -26,7 +27,7 @@ define('WC_MAYA_PLUGIN_FILE', __FILE__);
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
-use TaniKyuun\MayaGateway\Plugin;
+use RogueTechPhilippines\MayaGateway\Plugin;
 
 /**
  * Declare WooCommerce feature compatibility.
@@ -34,7 +35,7 @@ use TaniKyuun\MayaGateway\Plugin;
  * - `custom_order_tables` (HPOS): we read/write order meta via `WC_Order` only
  *   — no direct `posts`/`postmeta` SQL — so the gateway is HPOS-safe.
  * - `cart_checkout_blocks`: enables the block-based Cart and Checkout entry
- *   that {@see \TaniKyuun\MayaGateway\Blocks\MayaBlocksPaymentMethod} provides.
+ *   that {@see \RogueTechPhilippines\MayaGateway\Blocks\MayaBlocksPaymentMethod} provides.
  */
 add_action(
     'before_woocommerce_init',

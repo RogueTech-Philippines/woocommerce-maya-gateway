@@ -3,14 +3,14 @@
 /**
  * Unit tests for IpAllowlist.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Webhook
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Webhook;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook;
 
-use TaniKyuun\MayaGateway\Webhook\IpAllowlist;
+use RogueTechPhilippines\MayaGateway\Webhook\IpAllowlist;
 
 test('lists Maya\'s documented sandbox and production IPs', function (): void {
     expect(IpAllowlist::SANDBOX_IPS)->toEqualCanonicalizing([ '13.229.160.234', '3.1.199.75' ]);

@@ -3,14 +3,14 @@
 /**
  * Unit tests for the CheckoutSession value object.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Value
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Value
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Value;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Value;
 
-use TaniKyuun\MayaGateway\Value\CheckoutSession;
+use RogueTechPhilippines\MayaGateway\Value\CheckoutSession;
 
 test('from_array reads checkoutId and redirectUrl from Maya response', function (): void {
     $session = CheckoutSession::from_array([

@@ -3,19 +3,19 @@
 /**
  * Webhook receiver for Maya payment notifications.
  *
- * @package TaniKyuun\MayaGateway\Webhook
+ * @package RogueTechPhilippines\MayaGateway\Webhook
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Webhook;
+namespace RogueTechPhilippines\MayaGateway\Webhook;
 
-use TaniKyuun\MayaGateway\Api\Endpoints\Payments;
-use TaniKyuun\MayaGateway\Api\MayaApiClient;
-use TaniKyuun\MayaGateway\Gateway\MayaGateway;
-use TaniKyuun\MayaGateway\Settings\SettingsHelper;
-use TaniKyuun\MayaGateway\Util\Logger;
-use TaniKyuun\MayaGateway\Value\WebhookEvent;
+use RogueTechPhilippines\MayaGateway\Api\Endpoints\Payments;
+use RogueTechPhilippines\MayaGateway\Api\MayaApiClient;
+use RogueTechPhilippines\MayaGateway\Gateway\MayaGateway;
+use RogueTechPhilippines\MayaGateway\Settings\SettingsHelper;
+use RogueTechPhilippines\MayaGateway\Util\Logger;
+use RogueTechPhilippines\MayaGateway\Value\WebhookEvent;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;

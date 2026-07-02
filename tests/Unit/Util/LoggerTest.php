@@ -3,15 +3,15 @@
 /**
  * Unit tests for the Logger — level gating + secret/PII redaction.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Util
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Util
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Util;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Util;
 
 use Brain\Monkey\Functions;
-use TaniKyuun\MayaGateway\Util\Logger;
+use RogueTechPhilippines\MayaGateway\Util\Logger;
 
 /**
  * Register a capturing sink as WC's logger for the current test.

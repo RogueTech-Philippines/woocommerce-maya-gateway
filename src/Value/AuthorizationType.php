@@ -3,12 +3,12 @@
 /**
  * Manual-capture authorization type enum.
  *
- * @package TaniKyuun\MayaGateway\Value
+ * @package RogueTechPhilippines\MayaGateway\Value
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Value;
+namespace RogueTechPhilippines\MayaGateway\Value;
 
 /**
  * Authorization modes the merchant can select on the gateway settings page.

@@ -3,16 +3,16 @@
 /**
  * WooCommerce Blocks (Cart & Checkout) payment-method integration.
  *
- * @package TaniKyuun\MayaGateway\Blocks
+ * @package RogueTechPhilippines\MayaGateway\Blocks
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Blocks;
+namespace RogueTechPhilippines\MayaGateway\Blocks;
 
 use Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType;
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
-use TaniKyuun\MayaGateway\Gateway\MayaGateway;
+use RogueTechPhilippines\MayaGateway\Gateway\MayaGateway;
 
 /**
  * Exposes Maya Checkout to the block-based Cart and Checkout.

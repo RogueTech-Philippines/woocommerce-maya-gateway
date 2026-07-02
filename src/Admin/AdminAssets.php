@@ -3,18 +3,18 @@
 /**
  * Admin asset loader.
  *
- * @package TaniKyuun\MayaGateway\Admin
+ * @package RogueTechPhilippines\MayaGateway\Admin
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Admin;
+namespace RogueTechPhilippines\MayaGateway\Admin;
 
-use TaniKyuun\MayaGateway\Admin\Ajax\CapturePayment;
-use TaniKyuun\MayaGateway\Admin\Ajax\RefreshWebhooks;
-use TaniKyuun\MayaGateway\Admin\Ajax\SimulateWebhook;
-use TaniKyuun\MayaGateway\Admin\Ajax\TestConnection;
-use TaniKyuun\MayaGateway\Gateway\MayaGateway;
+use RogueTechPhilippines\MayaGateway\Admin\Ajax\CapturePayment;
+use RogueTechPhilippines\MayaGateway\Admin\Ajax\RefreshWebhooks;
+use RogueTechPhilippines\MayaGateway\Admin\Ajax\SimulateWebhook;
+use RogueTechPhilippines\MayaGateway\Admin\Ajax\TestConnection;
+use RogueTechPhilippines\MayaGateway\Gateway\MayaGateway;
 
 /**
  * Enqueues the JS/CSS used by the gateway settings screen and ships the

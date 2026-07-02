@@ -3,15 +3,15 @@
 /**
  * Local-dev webhook simulator.
  *
- * @package TaniKyuun\MayaGateway\Webhook
+ * @package RogueTechPhilippines\MayaGateway\Webhook
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Webhook;
+namespace RogueTechPhilippines\MayaGateway\Webhook;
 
-use TaniKyuun\MayaGateway\Settings\SettingsHelper;
-use TaniKyuun\MayaGateway\Value\WebhookEvent;
+use RogueTechPhilippines\MayaGateway\Settings\SettingsHelper;
+use RogueTechPhilippines\MayaGateway\Value\WebhookEvent;
 use WC_Order;
 use WP_Error;
 
@@ -68,7 +68,7 @@ class Simulator
             [],
             '127.0.0.1',
             true,
-            new \TaniKyuun\MayaGateway\Util\Logger(true),
+            new \RogueTechPhilippines\MayaGateway\Util\Logger(true),
             null,
             null,
             true,

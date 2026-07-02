@@ -3,22 +3,22 @@
 /**
  * Unit tests for the EventDispatcher.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Webhook
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Webhook;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook;
 
 use Brain\Monkey\Functions;
 use Mockery;
-use TaniKyuun\MayaGateway\Api\Endpoints\Payments;
-use TaniKyuun\MayaGateway\Gateway\MayaGateway;
-use TaniKyuun\MayaGateway\Util\Logger;
-use TaniKyuun\MayaGateway\Value\Money;
-use TaniKyuun\MayaGateway\Value\PaymentRecord;
-use TaniKyuun\MayaGateway\Value\WebhookEvent;
-use TaniKyuun\MayaGateway\Webhook\EventDispatcher;
+use RogueTechPhilippines\MayaGateway\Api\Endpoints\Payments;
+use RogueTechPhilippines\MayaGateway\Gateway\MayaGateway;
+use RogueTechPhilippines\MayaGateway\Util\Logger;
+use RogueTechPhilippines\MayaGateway\Value\Money;
+use RogueTechPhilippines\MayaGateway\Value\PaymentRecord;
+use RogueTechPhilippines\MayaGateway\Value\WebhookEvent;
+use RogueTechPhilippines\MayaGateway\Webhook\EventDispatcher;
 use WC_Order;
 use WP_Error;
 

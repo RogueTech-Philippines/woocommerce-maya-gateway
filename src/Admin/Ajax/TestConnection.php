@@ -3,21 +3,21 @@
 /**
  * AJAX handler for the Test Connection button.
  *
- * @package TaniKyuun\MayaGateway\Admin\Ajax
+ * @package RogueTechPhilippines\MayaGateway\Admin\Ajax
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Admin\Ajax;
+namespace RogueTechPhilippines\MayaGateway\Admin\Ajax;
 
-use TaniKyuun\MayaGateway\Admin\AdminAssets;
-use TaniKyuun\MayaGateway\Api\Endpoints\Checkouts;
-use TaniKyuun\MayaGateway\Api\Endpoints\Webhooks;
-use TaniKyuun\MayaGateway\Api\MayaApiClient;
-use TaniKyuun\MayaGateway\Gateway\MayaGateway;
-use TaniKyuun\MayaGateway\Util\IdempotencyKey;
-use TaniKyuun\MayaGateway\Util\Logger;
-use TaniKyuun\MayaGateway\Value\Money;
+use RogueTechPhilippines\MayaGateway\Admin\AdminAssets;
+use RogueTechPhilippines\MayaGateway\Api\Endpoints\Checkouts;
+use RogueTechPhilippines\MayaGateway\Api\Endpoints\Webhooks;
+use RogueTechPhilippines\MayaGateway\Api\MayaApiClient;
+use RogueTechPhilippines\MayaGateway\Gateway\MayaGateway;
+use RogueTechPhilippines\MayaGateway\Util\IdempotencyKey;
+use RogueTechPhilippines\MayaGateway\Util\Logger;
+use RogueTechPhilippines\MayaGateway\Value\Money;
 use WP_Error;
 
 /**

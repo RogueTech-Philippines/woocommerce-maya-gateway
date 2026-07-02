@@ -3,14 +3,14 @@
 /**
  * Unit tests for PayloadFlattener.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Webhook
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Webhook;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook;
 
-use TaniKyuun\MayaGateway\Webhook\PayloadFlattener;
+use RogueTechPhilippines\MayaGateway\Webhook\PayloadFlattener;
 
 test('flattens nested objects with dotted keys', function (): void {
     $flat = PayloadFlattener::flatten(

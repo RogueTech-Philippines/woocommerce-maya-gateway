@@ -3,19 +3,19 @@
 /**
  * Composes the createCheckout payload, calls Maya, persists meta on the order.
  *
- * @package TaniKyuun\MayaGateway\Gateway
+ * @package RogueTechPhilippines\MayaGateway\Gateway
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Gateway;
+namespace RogueTechPhilippines\MayaGateway\Gateway;
 
-use TaniKyuun\MayaGateway\Api\Endpoints\Checkouts;
-use TaniKyuun\MayaGateway\Settings\SettingsHelper;
-use TaniKyuun\MayaGateway\Util\IdempotencyKey;
-use TaniKyuun\MayaGateway\Util\Logger;
-use TaniKyuun\MayaGateway\Value\AuthorizationType;
-use TaniKyuun\MayaGateway\Value\Money;
+use RogueTechPhilippines\MayaGateway\Api\Endpoints\Checkouts;
+use RogueTechPhilippines\MayaGateway\Settings\SettingsHelper;
+use RogueTechPhilippines\MayaGateway\Util\IdempotencyKey;
+use RogueTechPhilippines\MayaGateway\Util\Logger;
+use RogueTechPhilippines\MayaGateway\Value\AuthorizationType;
+use RogueTechPhilippines\MayaGateway\Value\Money;
 use WC_Order;
 use WC_Order_Item_Product;
 use WP_Error;

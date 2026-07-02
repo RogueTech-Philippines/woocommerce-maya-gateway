@@ -3,18 +3,18 @@
 /**
  * Unit tests for the WebhookHandler::process() pipeline.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Webhook
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Webhook;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook;
 
 use Mockery;
-use TaniKyuun\MayaGateway\Util\Logger;
-use TaniKyuun\MayaGateway\Webhook\EventDispatcher;
-use TaniKyuun\MayaGateway\Webhook\SignatureVerifier;
-use TaniKyuun\MayaGateway\Webhook\WebhookHandler;
+use RogueTechPhilippines\MayaGateway\Util\Logger;
+use RogueTechPhilippines\MayaGateway\Webhook\EventDispatcher;
+use RogueTechPhilippines\MayaGateway\Webhook\SignatureVerifier;
+use RogueTechPhilippines\MayaGateway\Webhook\WebhookHandler;
 
 function wc_maya_fresh_timestamp(): string
 {

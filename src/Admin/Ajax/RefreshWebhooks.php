@@ -4,17 +4,17 @@
  * AJAX handler for the "Refresh from Maya" button under the registered-
  * webhooks table.
  *
- * @package TaniKyuun\MayaGateway\Admin\Ajax
+ * @package RogueTechPhilippines\MayaGateway\Admin\Ajax
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Admin\Ajax;
+namespace RogueTechPhilippines\MayaGateway\Admin\Ajax;
 
-use TaniKyuun\MayaGateway\Admin\AdminAssets;
-use TaniKyuun\MayaGateway\Api\Endpoints\Webhooks;
-use TaniKyuun\MayaGateway\Gateway\MayaGateway;
-use TaniKyuun\MayaGateway\Webhook\Registrar;
+use RogueTechPhilippines\MayaGateway\Admin\AdminAssets;
+use RogueTechPhilippines\MayaGateway\Api\Endpoints\Webhooks;
+use RogueTechPhilippines\MayaGateway\Gateway\MayaGateway;
+use RogueTechPhilippines\MayaGateway\Webhook\Registrar;
 use WP_Error;
 
 /**

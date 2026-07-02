@@ -3,17 +3,17 @@
 /**
  * AJAX handler for the "Simulate webhook" admin button.
  *
- * @package TaniKyuun\MayaGateway\Admin\Ajax
+ * @package RogueTechPhilippines\MayaGateway\Admin\Ajax
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Admin\Ajax;
+namespace RogueTechPhilippines\MayaGateway\Admin\Ajax;
 
-use TaniKyuun\MayaGateway\Admin\AdminAssets;
-use TaniKyuun\MayaGateway\Gateway\MayaGateway;
-use TaniKyuun\MayaGateway\Settings\SettingsHelper;
-use TaniKyuun\MayaGateway\Webhook\Simulator;
+use RogueTechPhilippines\MayaGateway\Admin\AdminAssets;
+use RogueTechPhilippines\MayaGateway\Gateway\MayaGateway;
+use RogueTechPhilippines\MayaGateway\Settings\SettingsHelper;
+use RogueTechPhilippines\MayaGateway\Webhook\Simulator;
 use WC_Order;
 use WP_Error;
 

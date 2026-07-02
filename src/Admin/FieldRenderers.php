@@ -3,14 +3,14 @@
 /**
  * HTML renderers + sanitizers for custom gateway-settings field types.
  *
- * @package TaniKyuun\MayaGateway\Admin
+ * @package RogueTechPhilippines\MayaGateway\Admin
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Admin;
+namespace RogueTechPhilippines\MayaGateway\Admin;
 
-use TaniKyuun\MayaGateway\Settings\SettingsHelper;
+use RogueTechPhilippines\MayaGateway\Settings\SettingsHelper;
 use WC_Payment_Gateway;
 
 /**
@@ -117,7 +117,7 @@ class FieldRenderers
 
     /**
      * Render an empty "registered webhooks" table — the JS fetches the live
-     * list on page load via {@see \TaniKyuun\MayaGateway\Admin\Ajax\RefreshWebhooks}.
+     * list on page load via {@see \RogueTechPhilippines\MayaGateway\Admin\Ajax\RefreshWebhooks}.
      * Server-side rendering would slow every admin pageload on a Maya API
      * call and time out if Maya is sluggish.
      *

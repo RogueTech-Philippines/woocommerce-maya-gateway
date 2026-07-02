@@ -3,14 +3,14 @@
 /**
  * Unit tests for the Maya API client.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit;
 
-use TaniKyuun\MayaGateway\Api\MayaApiClient;
+use RogueTechPhilippines\MayaGateway\Api\MayaApiClient;
 
 test(
     'sandbox uses pg-sandbox.paymaya.com',

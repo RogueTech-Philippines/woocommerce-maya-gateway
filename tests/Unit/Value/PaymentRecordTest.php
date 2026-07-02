@@ -3,14 +3,14 @@
 /**
  * Unit tests for the PaymentRecord value object.
  *
- * @package TaniKyuun\MayaGateway\Tests\Unit\Value
+ * @package RogueTechPhilippines\MayaGateway\Tests\Unit\Value
  */
 
 declare(strict_types=1);
 
-namespace TaniKyuun\MayaGateway\Tests\Unit\Value;
+namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Value;
 
-use TaniKyuun\MayaGateway\Value\PaymentRecord;
+use RogueTechPhilippines\MayaGateway\Value\PaymentRecord;
 
 test('from_array parses a typical Maya payment record', function (): void {
     $record = PaymentRecord::from_array([

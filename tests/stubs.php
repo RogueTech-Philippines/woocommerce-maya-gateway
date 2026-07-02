@@ -3,7 +3,7 @@
 /**
  * Minimal stubs for WordPress classes that Brain Monkey doesn't auto-mock.
  *
- * @package TaniKyuun\MayaGateway\Tests
+ * @package RogueTechPhilippines\MayaGateway\Tests
  */
 
 declare(strict_types=1);
@@ -12,7 +12,7 @@ if (! function_exists('wc_get_logger')) {
     /**
      * Test stub for WC's logger factory.
      *
-     * Returns null by default — which makes {@see \TaniKyuun\MayaGateway\Util\Logger}
+     * Returns null by default — which makes {@see \RogueTechPhilippines\MayaGateway\Util\Logger}
      * a no-op, matching production behavior when WooCommerce's logger is
      * unavailable, and keeping logging from bleeding across tests. LoggerTest
      * registers a capturing sink in $GLOBALS['wc_maya_test_log_sink'] for the
