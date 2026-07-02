@@ -77,6 +77,33 @@ class PublicKeyBundle
      */
     public static function for_environment(bool $is_sandbox): array
     {
-        return $is_sandbox ? self::SANDBOX_PEMS : self::PRODUCTION_PEMS;
+        $bundled = $is_sandbox ? self::SANDBOX_PEMS : self::PRODUCTION_PEMS;
+
+        /**
+         * Filter the RSA public keys used to verify Maya webhook signatures.
+         *
+         * Lets a site patch in a rotated / emergency key WITHOUT a plugin
+         * release if Maya changes its signing key unexpectedly — otherwise
+         * every webhook would fail signature verification and orders would
+         * silently stop completing until an update ships. The bundled PEMs are
+         * the default; a filter can append to or replace them.
+         *
+         * @param list<string> $bundled    The bundled PEM strings for this environment.
+         * @param bool         $is_sandbox Whether the sandbox environment is active.
+         */
+        $keys = apply_filters('wc_maya_webhook_public_keys', $bundled, $is_sandbox);
+
+        if (! is_array($keys)) {
+            return $bundled;
+        }
+
+        $keys = array_values(array_filter(
+            array_map(static fn($k): string => is_string($k) ? $k : '', $keys),
+            static fn(string $k): bool => '' !== trim($k),
+        ));
+
+        // Never leave verification with an empty key set — fall back to bundled
+        // so a mis-typed filter can't disable signature checks entirely.
+        return [] === $keys ? $bundled : $keys;
     }
 }

@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook;
 
+use Brain\Monkey\Filters;
 use RogueTechPhilippines\MayaGateway\Webhook\PublicKeyBundle;
 
 test('exposes two PEMs per environment', function (): void {
@@ -27,4 +28,16 @@ test('every PEM is parseable by OpenSSL', function (): void {
         $key = openssl_pkey_get_public($pem);
         expect($key)->not->toBeFalse();
     }
+});
+
+test('the public-keys filter can supply a rotated key without a release', function (): void {
+    Filters\expectApplied('wc_maya_webhook_public_keys')->andReturn([ 'ROTATED-PEM' ]);
+
+    expect(PublicKeyBundle::for_environment(false))->toBe([ 'ROTATED-PEM' ]);
+});
+
+test('an empty/invalid filter result falls back to the bundled keys (never disables verification)', function (): void {
+    Filters\expectApplied('wc_maya_webhook_public_keys')->andReturn([]);
+
+    expect(PublicKeyBundle::for_environment(true))->toBe(PublicKeyBundle::SANDBOX_PEMS);
 });
