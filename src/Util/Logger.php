@@ -38,6 +38,13 @@ class Logger
      *    Privacy Act / GDPR). Maya's validation errors echo the offending
      *    field in the *response* (see MayaApiClient::format_parameter_details),
      *    so redacting the request copy doesn't hurt debuggability.
+     *  - Inbound webhook PII / card data: Maya payment webhooks nest the
+     *    customer and (masked) instrument under `fundSource` / `fundingInstrument`
+     *    (incl. `maskedPan`, cardholder name), plus `receipt`, `customer`, and
+     *    direct `email` / `phone` / `contact` / name fields. The full payload is
+     *    logged (debug/info) on the webhook path, so these are redacted to keep
+     *    cardholder data and PII off disk. Keys are matched case-insensitively,
+     *    so camelCase (`fundSource`, `maskedPan`) is covered.
      *
      * @var list<string>
      */
@@ -48,6 +55,18 @@ class Logger
         'api_key',
         'secret',
         'buyer',
+        'fundsource',
+        'fundinginstrument',
+        'maskedpan',
+        'card',
+        'receipt',
+        'customer',
+        'contact',
+        'email',
+        'phone',
+        'firstname',
+        'lastname',
+        'middlename',
     ];
 
     public function __construct(private readonly bool $debug_enabled = false) {}
