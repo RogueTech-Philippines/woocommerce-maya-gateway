@@ -79,28 +79,59 @@ class EventDispatcher
             return [ 'action' => 'order_not_found', 'reference' => (string) $reference ];
         }
 
-        if ($event->is_terminal_failure()) {
-            return $this->mark_failed($order, $event);
-        }
-
-        // Idempotency: webhooks retry. Once an order is paid we don't want a
-        // second PAYMENT_SUCCESS retry to re-trigger payment_complete (which
-        // would fire `woocommerce_payment_complete` again and produce
-        // duplicate side effects in other plugins).
+        // Monotonic order state: "paid is a floor." Once an order is paid we
+        // never demote it, and we don't re-run payment_complete. This guard
+        // runs BEFORE the terminal-failure branch so a late, replayed, or
+        // out-of-order PAYMENT_FAILED / EXPIRED / CANCELLED cannot flip a
+        // completed order back to `failed`. That is safe for Maya: a genuine
+        // reversal of a settled payment arrives as a refund event on the
+        // separate process_refund() path, never as a terminal-failure webhook
+        // on the original checkout. It also makes concurrent/retried
+        // PAYMENT_SUCCESS deliveries converge (payment_complete is idempotent
+        // in WC once the order is paid).
         if ($order->is_paid()) {
-            $this->logger->info('EventDispatcher: order already paid; skipping.', [
+            $this->logger->info('EventDispatcher: order already paid; skipping (paid is a floor).', [
                 'order_id' => $order->get_id(),
                 'event'    => $event->value,
             ]);
             return [ 'action' => 'already_paid', 'order_id' => (int) $order->get_id() ];
         }
 
+        // Replay de-dup (defense-in-depth): if this exact event has already been
+        // terminally processed for this order, don't re-run it. Non-terminal
+        // transients are never recorded, so RetryQueue replays still proceed.
+        $ledger_key = WebhookLedger::entry_key($event, $payload);
+        if (WebhookLedger::has($order, $ledger_key)) {
+            $this->logger->info('EventDispatcher: duplicate webhook; already terminally processed.', [
+                'order_id' => $order->get_id(),
+                'event'    => $event->value,
+                'key'      => $ledger_key,
+            ]);
+            return [ 'action' => 'duplicate', 'order_id' => (int) $order->get_id(), 'event' => $event->value ];
+        }
+
+        if ($event->is_terminal_failure()) {
+            $result = $this->mark_failed($order, $event);
+            WebhookLedger::record($order, $event, $payload, $result['action']);
+            return $result;
+        }
+
         $auth_type = AuthorizationType::from_setting($order->get_meta(MayaGateway::META_AUTHORIZATION_TYPE));
 
         if (WebhookEvent::PaymentSuccess === $event) {
-            return $auth_type->is_manual_capture()
+            $result = $auth_type->is_manual_capture()
                 ? $this->complete_manual_capture($order, $payload)
                 : $this->complete_payment($order, $payload);
+            WebhookLedger::record($order, $event, $payload, $result['action']);
+
+            // Extension seam: fire only on an actual completion so integrations
+            // (fulfilment, analytics, a future multi-method layer) can react to
+            // a confirmed Maya payment without re-parsing webhooks.
+            if (in_array($result['action'], [ 'payment_complete', 'payment_complete_full_capture' ], true)) {
+                do_action('wc_maya_payment_confirmed', (int) $order->get_id(), $payload);
+            }
+
+            return $result;
         }
 
         if (WebhookEvent::Authorized === $event && $auth_type->is_manual_capture()) {

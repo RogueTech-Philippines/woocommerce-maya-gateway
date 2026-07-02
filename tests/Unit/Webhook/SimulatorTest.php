@@ -24,6 +24,17 @@ function wc_maya_fake_order(int $id = 42, float $total = 100.5, string $currency
     $order->shouldReceive('get_id')->andReturn($id);
     $order->shouldReceive('get_total')->andReturn($total);
     $order->shouldReceive('get_currency')->andReturn($currency);
+    // WebhookLedger reads/writes this meta on terminal dispatch outcomes.
+    $order->shouldReceive('get_meta')
+        ->with(\RogueTechPhilippines\MayaGateway\Gateway\MayaGateway::META_WEBHOOK_LOG)
+        ->andReturn('')
+        ->byDefault();
+    $order->shouldReceive('get_meta')
+        ->with(\RogueTechPhilippines\MayaGateway\Gateway\MayaGateway::META_AUTHORIZATION_TYPE)
+        ->andReturn('none')
+        ->byDefault();
+    $order->shouldReceive('update_meta_data')->andReturnSelf()->byDefault();
+    $order->shouldReceive('save')->andReturn($id)->byDefault();
     return $order;
 }
 

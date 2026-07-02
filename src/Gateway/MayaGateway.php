@@ -41,6 +41,14 @@ class MayaGateway extends WC_Payment_Gateway
     public const META_IDEMPOTENCY_KEY    = '_maya_idempotency_key';
     public const META_AUTHORIZATION_TYPE = '_maya_authorization_type';
 
+    /**
+     * Per-order log of terminally-processed webhook events (JSON list). Written
+     * by {@see \RogueTechPhilippines\MayaGateway\Webhook\WebhookLedger}; used for
+     * replay de-duplication, an order "Maya event history", and as the seed for
+     * a future settlement-reconciliation view.
+     */
+    public const META_WEBHOOK_LOG = '_maya_webhook_log';
+
     public function __construct()
     {
         $this->id                 = self::ID;

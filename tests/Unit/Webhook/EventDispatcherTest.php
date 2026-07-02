@@ -19,14 +19,16 @@ use RogueTechPhilippines\MayaGateway\Value\Money;
 use RogueTechPhilippines\MayaGateway\Value\PaymentRecord;
 use RogueTechPhilippines\MayaGateway\Value\WebhookEvent;
 use RogueTechPhilippines\MayaGateway\Webhook\EventDispatcher;
+use RogueTechPhilippines\MayaGateway\Webhook\WebhookLedger;
 use WC_Order;
 use WP_Error;
 
 beforeEach(function (): void {
     Functions\when('__')->alias(static fn(string $text, string $domain = ''): string => $text);
+    Functions\when('wp_json_encode')->alias(static fn(mixed $data): string|false => json_encode($data));
 });
 
-function wc_maya_mock_order(int $id, float $total, bool $is_paid = false, string $auth_type = 'none', string $currency = 'PHP'): WC_Order
+function wc_maya_mock_order(int $id, float $total, bool $is_paid = false, string $auth_type = 'none', string $currency = 'PHP', string $webhook_log = ''): WC_Order
 {
     $order = Mockery::mock(WC_Order::class);
     $order->shouldReceive('get_id')->andReturn($id);
@@ -36,6 +38,13 @@ function wc_maya_mock_order(int $id, float $total, bool $is_paid = false, string
     $order->shouldReceive('get_meta')
         ->with(MayaGateway::META_AUTHORIZATION_TYPE)
         ->andReturn($auth_type);
+    // WebhookLedger reads/writes this meta key on terminal outcomes.
+    $order->shouldReceive('get_meta')
+        ->with(MayaGateway::META_WEBHOOK_LOG)
+        ->andReturn($webhook_log)
+        ->byDefault();
+    $order->shouldReceive('update_meta_data')->andReturnSelf()->byDefault();
+    $order->shouldReceive('save')->andReturn($id)->byDefault();
     return $order;
 }
 
@@ -172,7 +181,7 @@ test('checkout failure, dropout, and cancellation use terminal failure handling'
     }
 });
 
-test('already-paid success retries are skipped, but terminal failures still fail', function (): void {
+test('paid orders are a floor: success retries AND terminal failures are skipped', function (): void {
     $paid_success = wc_maya_mock_order(42, 199.5, is_paid: true);
     $paid_success->shouldNotReceive('payment_complete');
     $paid_success->shouldNotReceive('update_status');
@@ -190,8 +199,9 @@ test('already-paid success retries are skipped, but terminal failures still fail
 
     expect($success_result['action'])->toBe('already_paid');
 
+    // A late / replayed terminal-failure webhook must NOT demote a paid order.
     $paid_failed = wc_maya_mock_order(42, 199.5, is_paid: true);
-    $paid_failed->shouldReceive('update_status')->with('failed', Mockery::type('string'))->once();
+    $paid_failed->shouldNotReceive('update_status');
 
     Functions\when('wc_get_order')->alias(static fn(): WC_Order => $paid_failed);
 
@@ -200,7 +210,34 @@ test('already-paid success retries are skipped, but terminal failures still fail
         [ 'requestReferenceNumber' => '42' ],
     );
 
-    expect($failed_result['action'])->toBe('failed');
+    expect($failed_result['action'])->toBe('already_paid');
+});
+
+test('regression: out-of-order PAYMENT_FAILED after success keeps the order paid', function (): void {
+    // Simulates a customer who retried a failed payment then succeeded, with
+    // Maya delivering the (older) failure webhook AFTER the success one.
+    $order = wc_maya_mock_order(7, 500.0, is_paid: false);
+    $order->shouldReceive('payment_complete')->with('pay_ok')->once();
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    $ok = (new EventDispatcher(new Logger(false)))->dispatch(
+        WebhookEvent::PaymentSuccess,
+        [ 'id' => 'pay_ok', 'amount' => 500.0, 'requestReferenceNumber' => '7' ],
+    );
+    expect($ok['action'])->toBe('payment_complete');
+
+    // Now the stale failure lands; order is paid → must be ignored, not failed.
+    $paid = wc_maya_mock_order(7, 500.0, is_paid: true);
+    $paid->shouldNotReceive('update_status');
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $paid);
+
+    $late = (new EventDispatcher(new Logger(false)))->dispatch(
+        WebhookEvent::PaymentFailed,
+        [ 'requestReferenceNumber' => '7' ],
+    );
+    expect($late['action'])->toBe('already_paid');
 });
 
 test('missing order returns order_not_found without touching anything', function (): void {
@@ -388,4 +425,41 @@ test('PAYMENT_SUCCESS on manual-capture flags when no AUTHORIZED record is found
     );
 
     expect($result['action'])->toBe('manual_capture_no_authorization');
+});
+
+test('a replayed PAYMENT_SUCCESS already in the ledger is skipped as duplicate', function (): void {
+    $payload = [ 'id' => 'pay_dupe', 'amount' => 199.5, 'requestReferenceNumber' => '42' ];
+
+    // Seed the order's webhook log with this exact event's key.
+    $seeded = json_encode([
+        [ 'key' => WebhookLedger::entry_key(WebhookEvent::PaymentSuccess, $payload), 'action' => 'payment_complete' ],
+    ]);
+
+    $order = wc_maya_mock_order(42, 199.5, is_paid: false, webhook_log: (string) $seeded);
+    $order->shouldNotReceive('payment_complete');
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    $result = (new EventDispatcher(new Logger(false)))->dispatch(WebhookEvent::PaymentSuccess, $payload);
+
+    expect($result['action'])->toBe('duplicate');
+});
+
+test('a terminal success records a snapshot to the webhook ledger', function (): void {
+    $order = wc_maya_mock_order(42, 199.5);
+    $order->shouldReceive('payment_complete')->with('pay_new')->once();
+    // The ledger must persist exactly one snapshot on a terminal outcome.
+    $order->shouldReceive('update_meta_data')
+        ->with(MayaGateway::META_WEBHOOK_LOG, Mockery::type('string'))
+        ->once();
+    $order->shouldReceive('save')->once();
+
+    Functions\when('wc_get_order')->alias(static fn(): WC_Order => $order);
+
+    $result = (new EventDispatcher(new Logger(false)))->dispatch(
+        WebhookEvent::PaymentSuccess,
+        [ 'id' => 'pay_new', 'amount' => 199.5, 'requestReferenceNumber' => '42' ],
+    );
+
+    expect($result['action'])->toBe('payment_complete');
 });
