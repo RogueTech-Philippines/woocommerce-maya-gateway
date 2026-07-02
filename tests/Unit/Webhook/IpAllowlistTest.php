@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace RogueTechPhilippines\MayaGateway\Tests\Unit\Webhook;
 
+use Brain\Monkey\Filters;
 use RogueTechPhilippines\MayaGateway\Webhook\IpAllowlist;
 
 test('lists Maya\'s documented sandbox and production IPs', function (): void {
@@ -56,4 +57,17 @@ test('get_source_ip trims whitespace and skips all-whitespace values', function 
         'HTTP_CF_CONNECTING_IP' => '   ',
         'REMOTE_ADDR'           => '127.0.0.1',
     ]))->toBe('127.0.0.1');
+});
+
+test('the allowlist filter can patch a changed Maya egress IP', function (): void {
+    Filters\expectApplied('wc_maya_webhook_allowed_ips')->andReturn([ '198.51.100.10' ]);
+
+    expect(IpAllowlist::allows('198.51.100.10', false))->toBeTrue();
+});
+
+test('an empty allowlist from the filter disables the IP check (fail open)', function (): void {
+    Filters\expectApplied('wc_maya_webhook_allowed_ips')->andReturn([]);
+
+    // Any IP is accepted because signature verification is the load-bearing check.
+    expect(IpAllowlist::allows('203.0.113.99', false))->toBeTrue();
 });

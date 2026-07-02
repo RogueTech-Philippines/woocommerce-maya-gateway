@@ -41,12 +41,44 @@ class IpAllowlist
      */
     public static function for_environment(bool $is_sandbox): array
     {
-        return $is_sandbox ? self::SANDBOX_IPS : self::PRODUCTION_IPS;
+        $bundled = $is_sandbox ? self::SANDBOX_IPS : self::PRODUCTION_IPS;
+
+        /**
+         * Filter the source-IP allowlist for Maya webhooks.
+         *
+         * Lets a site patch a changed Maya egress IP WITHOUT a plugin release
+         * (otherwise every webhook would be blocked and orders would silently
+         * stop completing). Returning an EMPTY array intentionally disables the
+         * IP check — signature verification is the load-bearing check, so this
+         * is a safe code-level escape hatch. It is deliberately NOT exposed as
+         * an admin setting so it can't be clicked off by accident.
+         *
+         * @param list<string> $bundled    Bundled Maya IPs for this environment.
+         * @param bool         $is_sandbox Whether the sandbox environment is active.
+         */
+        $ips = apply_filters('wc_maya_webhook_allowed_ips', $bundled, $is_sandbox);
+
+        if (! is_array($ips)) {
+            return $bundled;
+        }
+
+        return array_values(array_filter(
+            array_map(static fn($ip): string => is_string($ip) ? trim($ip) : '', $ips),
+            static fn(string $ip): bool => '' !== $ip,
+        ));
     }
 
     public static function allows(string $ip, bool $is_sandbox): bool
     {
-        return in_array($ip, self::for_environment($is_sandbox), true);
+        $allowlist = self::for_environment($is_sandbox);
+
+        // An empty allowlist means the check has been disabled via filter —
+        // fail OPEN here (signature verification already gated this request).
+        if ([] === $allowlist) {
+            return true;
+        }
+
+        return in_array($ip, $allowlist, true);
     }
 
     /**

@@ -31,6 +31,20 @@ class TimestampVerifier
         $now  = $now_ms ?? (int) floor(microtime(true) * 1000);
         $diff = abs($now - (int) $timestamp_ms);
 
-        return $diff <= self::TOLERANCE_MS;
+        return $diff <= self::tolerance_ms();
+    }
+
+    /**
+     * Resolve the freshness window (in milliseconds), filterable so a site with
+     * known clock skew on shared hosting can widen it rather than have every
+     * webhook silently rejected. Keep the host on NTP first — this is a safety
+     * valve, not a substitute. Values are floored at the default to avoid
+     * accidentally narrowing the replay window.
+     */
+    public static function tolerance_ms(): int
+    {
+        $filtered = apply_filters('wc_maya_webhook_timestamp_tolerance_ms', self::TOLERANCE_MS);
+
+        return is_int($filtered) && $filtered >= self::TOLERANCE_MS ? $filtered : self::TOLERANCE_MS;
     }
 }
